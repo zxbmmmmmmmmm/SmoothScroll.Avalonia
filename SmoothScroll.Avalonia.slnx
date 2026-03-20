@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/.Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Packages.props" />
+    <File Path="nuget.config" />
+  </Folder>
+  <Folder Name="/Samples/">
+    <Project Path="samples/SmoothScroll.Avalonia.Sample.Android/SmoothScroll.Avalonia.Sample.Android.csproj">
+      <Deploy />
+    </Project>
+    <Project Path="samples/SmoothScroll.Avalonia.Sample.Browser/SmoothScroll.Avalonia.Sample.Browser.csproj" />
+    <Project Path="samples/SmoothScroll.Avalonia.Sample.Desktop/SmoothScroll.Avalonia.Sample.Desktop.csproj" />
+    <Project Path="samples/SmoothScroll.Avalonia.Sample.iOS/SmoothScroll.Avalonia.Sample.iOS.csproj">
+      <Deploy />
+    </Project>
+    <Project Path="samples/SmoothScroll.Avalonia.Sample/SmoothScroll.Avalonia.Sample.csproj" />
+  </Folder>
+  <Project Path="src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj" Id="8e486682-3f15-487a-87e8-f8aa77cd2b09" />
+  <Project Path="src/SmoothScroll.Avalonia.InteractionTracker/SmoothScroll.Avalonia.InteractionTracker.csproj" />
+</Solution>
