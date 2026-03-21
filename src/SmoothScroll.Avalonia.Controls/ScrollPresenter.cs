@@ -387,7 +387,10 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _interactionSource = new InputElementInteractionSource(this, _interactionTracker);
         UpdateScrollAnimation();
 
-        if(Child is not null)
+        //UpdateScrollAnimation();
+        UpdateInteractionOptions();    
+        SyncInteractionTrackerState();
+        if (Child is not null)
         {
             // 生成器生成出的 CompositionVisual 只在 Client 端设置了默认值，但 Server 端没有
             // 这会导致 Scale 被初始化为 0，导致内容不可见，需要滚动一次后触发 ExpressionAnimation 更新才能看到内容
@@ -588,6 +591,25 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
 
         return finalSize;
+    }
+
+    private void SyncInteractionTrackerState()
+    {
+        if (_interactionTracker == null)
+        {
+            return;
+        }
+
+        try
+        {
+            _compositionUpdate = true;
+            _interactionTracker.TryUpdateScale(ZoomFactor);
+            _interactionTracker.TryUpdatePosition(new Vector3D(Offset.X, Offset.Y, 0), InteractionTrackerClampingOption.Disabled);
+        }
+        finally
+        {
+            _compositionUpdate = false;
+        }
     }
 
     private void RequestArrangeThrottled()
