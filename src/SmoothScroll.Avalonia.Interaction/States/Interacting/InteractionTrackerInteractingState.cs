@@ -128,6 +128,10 @@ internal sealed class InteractionTrackerInteractingState : InteractionTrackerSta
         _interactionTracker.Owner?.RequestIgnored(_interactionTracker, new InteractionTrackerRequestIgnoredArgs(requestId));
     }
 
+    internal override void ReceiveBoundsUpdate()
+    {
+    }
+
     public static Vector3D GetElasticPoint(Vector3D current, Vector3D min, Vector3D max, double tension = Tension)
     {
         var resX = current.X;
@@ -223,6 +227,4 @@ internal sealed class InteractionTrackerInteractingState : InteractionTrackerSta
         }
         return (resultOffset * ReferenceRange) / (limit - resultOffset);
     }
-
-  
 }

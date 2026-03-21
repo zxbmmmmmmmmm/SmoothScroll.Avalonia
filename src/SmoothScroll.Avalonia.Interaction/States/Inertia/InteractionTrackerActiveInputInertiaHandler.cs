@@ -47,6 +47,19 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
         _stopwatch?.Stop();
     }
 
+    public void ReceiveBoundsUpdate()
+    {
+        if (_stopwatch == null)
+        {
+            return;
+        }
+
+        var currentElapsedInSeconds = _stopwatch.ElapsedMilliseconds / 1000.0f;
+        _xHelper.PositionBoundsChanged(currentElapsedInSeconds);
+        _yHelper.PositionBoundsChanged(currentElapsedInSeconds);
+        _zHelper.PositionBoundsChanged(currentElapsedInSeconds);
+    }
+
     public void OnTick()
     {
         var currentElapsedInSeconds = _stopwatch!.ElapsedMilliseconds / 1000.0f;
@@ -84,7 +97,7 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
         internal double InitialVelocity { get; }
         internal double InitialValue { get; }
         internal double FinalValue { get; }
-        internal double FinalModifiedValue { get; }
+        internal double FinalModifiedValue => Math.Clamp(FinalValue, GetValue(Handler._interactionTracker.MinPosition), GetValue(Handler._interactionTracker.MaxPosition));
         internal double TimeToMinimumVelocity { get; }
         internal Axis Axis { get; }
 
@@ -118,7 +131,6 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
             var deltaPosition = CalculateDeltaPosition(TimeToMinimumVelocity);
 
             FinalValue = InitialValue + deltaPosition;
-            FinalModifiedValue = Math.Clamp(FinalValue, GetValue(Handler._interactionTracker.MinPosition), GetValue(Handler._interactionTracker.MaxPosition));
         }
 
         private double GetValue(Vector3D vector)
@@ -210,16 +222,32 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
             }
 
             var currentPosition = InitialValue + CalculateDeltaPosition(currentElapsedInSeconds);
+            UpdateDampingAnimation(currentPosition, currentElapsedInSeconds);
+            return currentPosition;
+        }
+
+        public void PositionBoundsChanged(float currentElapsedInSeconds)
+        {
+            if (_dampingStateTimeInSeconds.HasValue || HasCompleted)
+            {
+                return;
+            }
+
+            var currentPosition = GetValue(Handler._interactionTracker.Position);
+            UpdateDampingAnimation(currentPosition, currentElapsedInSeconds);
+        }
+
+        private void UpdateDampingAnimation(double currentPosition, float currentElapsedInSeconds)
+        {
             var minPosition = GetValue(Handler._interactionTracker.MinPosition);
             var maxPosition = GetValue(Handler._interactionTracker.MaxPosition);
             if (currentPosition < minPosition || currentPosition > maxPosition)
             {
                 // This is an overpan from Interacting state. Use damping animation.
-                _dampingStateTimeInSeconds = Handler._stopwatch!.ElapsedMilliseconds / 1000.0f;
+                _dampingStateTimeInSeconds = currentElapsedInSeconds;
                 _dampingStatePosition = currentPosition;
                 _initialDampingVelocity = InitialVelocity * Math.Pow(DecayRate, currentElapsedInSeconds);
             }
-            return currentPosition;
         }
     }
 }

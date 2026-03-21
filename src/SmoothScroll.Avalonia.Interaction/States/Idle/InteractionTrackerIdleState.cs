@@ -84,4 +84,17 @@ internal sealed class InteractionTrackerIdleState : InteractionTrackerState
 
         _interactionTracker.SetPosition(value, requestId);
     }
+
+    internal override void ReceiveBoundsUpdate()
+    {
+        var position = _interactionTracker.Position;
+        var clampedPosition = Vector3D.Clamp(position, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
+
+        if (position == clampedPosition)
+        {
+            return;
+        }
+
+        _interactionTracker.SetPosition(clampedPosition, 0);
+    }
 }

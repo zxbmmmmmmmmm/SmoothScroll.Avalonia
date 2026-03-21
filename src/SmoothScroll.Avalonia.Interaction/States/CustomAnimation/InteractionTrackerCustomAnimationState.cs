@@ -68,4 +68,8 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
         _interactionTracker.SetPosition(value, requestId);
         _interactionTracker.ChangeState(new InteractionTrackerIdleState(_interactionTracker, requestId));
     }
+
+    internal override void ReceiveBoundsUpdate()
+    {
+    }
 }

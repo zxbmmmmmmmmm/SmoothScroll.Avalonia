@@ -22,7 +22,8 @@
       <controls:ScrollView
         HorizontalContentAlignment="Center"
         VerticalContentAlignment="Center"
-        HorizontalScrollBarVisibility="Auto"
+        HorizontalScrollBarVisibility="Hidden"
+        VerticalScrollBarVisibility="Hidden"
         IsZoomEnabled="True">
         <Image Stretch="UniformToFill" Source="avares://SmoothScroll.Avalonia.Sample/Assets/Images/4074.bmp" />
       </controls:ScrollView>

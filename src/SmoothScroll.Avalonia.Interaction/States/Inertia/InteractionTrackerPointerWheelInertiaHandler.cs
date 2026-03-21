@@ -16,8 +16,6 @@ internal class InteractionTrackerPointerWheelInertiaHandler : ServerObject, ISer
     private const double Epsilon = 0.0001;
 
     private readonly Vector3D _initialVelocity;
-    private readonly Vector3D _minPosition;
-    private readonly Vector3D _maxPosition;
     private readonly Vector3D _initialPosition;
     private readonly Vector3D _calculatedFinalPosition;
     private readonly double _timeConstantSeconds;
@@ -29,8 +27,6 @@ internal class InteractionTrackerPointerWheelInertiaHandler : ServerObject, ISer
         : base(serverCompositor)
     {
         _interactionTracker = interactionTracker;
-        _minPosition = interactionTracker.MinPosition;
-        _maxPosition = interactionTracker.MaxPosition;
         _initialPosition = _interactionTracker.Position;
 
         _timeConstantSeconds = HalfLifeSeconds / Math.Log(2.0);
@@ -48,9 +44,9 @@ internal class InteractionTrackerPointerWheelInertiaHandler : ServerObject, ISer
 
     public Vector3D FinalPosition => _calculatedFinalPosition;
 
-    public Vector3D FinalModifiedPosition => Vector3D.Clamp(_calculatedFinalPosition, _minPosition, _maxPosition);
+    public Vector3D FinalModifiedPosition => Vector3D.Clamp(_calculatedFinalPosition, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
 
-    public double FinalModifiedScale => _interactionTracker.Scale; // TODO: Scale not yet implemented
+    public double FinalModifiedScale => _interactionTracker.Scale;
 
     public void Start()
     {
@@ -74,7 +70,7 @@ internal class InteractionTrackerPointerWheelInertiaHandler : ServerObject, ISer
         Velocity = currentVelocity;
 
         var newPosition = _initialPosition + _initialVelocity * _timeConstantSeconds * (1 - decay);
-        var clampedNewPosition = Vector3D.Clamp(newPosition, _minPosition, _maxPosition);
+        var clampedNewPosition = Vector3D.Clamp(newPosition, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
 
         _interactionTracker.SetPosition(clampedNewPosition, requestId: 0);
 

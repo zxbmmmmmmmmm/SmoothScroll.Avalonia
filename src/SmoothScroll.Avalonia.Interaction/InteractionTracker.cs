@@ -21,12 +21,13 @@ public partial class InteractionTracker : CompositionObject
     public Vector3D MinPosition
     {
         get => Server.MinPosition;
-        set => Server.MinPosition = value;
+        set => UpdatePositionBounds(value, Server.MaxPosition);
     }
+
     public Vector3D MaxPosition
     { 
         get => Server.MaxPosition;
-        set => Server.MaxPosition = value;
+        set => UpdatePositionBounds(Server.MinPosition, value);
     }
 
     public Vector3D? PositionInertiaDecayRate { get; set; }
@@ -50,29 +51,44 @@ public partial class InteractionTracker : CompositionObject
     {
         if (Position == newPosition)
             return;
+        Compositor.Loop.Wakeup();
+
         Server.Position = newPosition;
         Owner?.ValuesChanged(this, new InteractionTrackerValuesChangedArgs(newPosition, Scale, requestId));
-        Compositor.Loop.Wakeup();
     }
 
     internal void SetScale(double newScale, int requestId)
     {
         if (CompositionMathHelpers.IsCloseReal(Scale, newScale))
             return;
+        Compositor.Loop.Wakeup();
 
         Server.Scale = newScale;
         Owner?.ValuesChanged(this, new InteractionTrackerValuesChangedArgs(Position, newScale, requestId));
-        Compositor.Loop.Wakeup();
     }
 
     internal void SetPositionAndScale(Vector3D newPosition, double newScale, int requestId)
     {
         if (CompositionMathHelpers.IsCloseReal(Scale, newScale) && Position == newPosition)
             return;
+        Compositor.Loop.Wakeup();
+
         Server.Position = newPosition;
         Server.Scale = newScale;
         Owner?.ValuesChanged(this, new InteractionTrackerValuesChangedArgs(newPosition, newScale, requestId));
+    }
+
+    internal void UpdatePositionBounds(Vector3D minPosition, Vector3D maxPosition)
+    {
+        if(Server.MinPosition == minPosition && Server.MaxPosition == maxPosition)
+            return;
+        if (minPosition.X > maxPosition.X || minPosition.Y > maxPosition.Y)
+            return;
         Compositor.Loop.Wakeup();
+
+        Server.MinPosition = minPosition;
+        Server.MaxPosition = maxPosition;
+        _state.ReceiveBoundsUpdate();
     }
 
     internal void ChangeState(InteractionTrackerState newState)

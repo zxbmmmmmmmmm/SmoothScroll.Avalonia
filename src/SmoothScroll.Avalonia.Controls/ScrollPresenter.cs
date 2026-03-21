@@ -443,6 +443,8 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             IfUnset(CanHorizontallyScrollProperty, p => Bind(p, owner.GetObservable(ScrollViewer.HorizontalScrollBarVisibilityProperty, NotDisabled), BindingPriority.Template)),
             IfUnset(CanVerticallyScrollProperty, p => Bind(p, owner.GetObservable(ScrollViewer.VerticalScrollBarVisibilityProperty, NotDisabled), BindingPriority.Template)),
             IfUnset(OffsetProperty, p => Bind(p, owner.GetBindingObservable(ScrollViewer.OffsetProperty), BindingPriority.Template)),
+            IfUnset(HorizontalContentAlignmentProperty, p => Bind(p, owner.GetBindingObservable(ContentControl.HorizontalContentAlignmentProperty), BindingPriority.Template)),
+            IfUnset(VerticalContentAlignmentProperty, p => Bind(p, owner.GetBindingObservable(ContentControl.VerticalContentAlignmentProperty), BindingPriority.Template)),
             IfUnset(IsScrollChainingEnabledProperty, p => Bind(p, owner.GetBindingObservable(ScrollViewer.IsScrollChainingEnabledProperty), BindingPriority.Template)),
             IfUnset(ContentProperty, p => Bind(p, owner.GetBindingObservable(ContentProperty), BindingPriority.Template)),
         }.Where(d => d != null).Cast<IDisposable>().ToArray();
@@ -1104,8 +1106,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         var minPosition = ComputeMinPositionForAlignment(baseExtent, scale);
         var maxPosition = ComputeMaxPositionForAlignment(baseExtent, scale);
 
-        _interactionTracker.MinPosition = new Vector3D(minPosition.X, minPosition.Y, 0);
-        _interactionTracker.MaxPosition = new Vector3D(maxPosition.X, maxPosition.Y, 0);
+        _interactionTracker.UpdatePositionBounds(new Vector3D(minPosition.X, minPosition.Y, 0), new Vector3D(maxPosition.X, maxPosition.Y, 0));
 
         var range = maxPosition - minPosition;
 

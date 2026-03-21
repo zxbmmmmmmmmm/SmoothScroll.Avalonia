@@ -183,4 +183,12 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
         _handler.Stop();
     }
 
+    internal override void ReceiveBoundsUpdate()
+    {
+        if(_handler is InteractionTrackerActiveInputInertiaHandler activeInputInertiaHandler)
+        {
+            activeInputInertiaHandler.ReceiveBoundsUpdate();
+        }
+    }
+
 }

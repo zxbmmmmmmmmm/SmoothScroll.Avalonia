@@ -56,7 +56,6 @@ internal class InteractionTrackerScaleInertiaHandler : ServerObject, IInteractio
     public double ScaleVelocity { get; private set; }
 
     public double FinalModifiedScale { get; init; }
-
     public void Start()
     {
         Compositor.Animations.AddToClock(this);
