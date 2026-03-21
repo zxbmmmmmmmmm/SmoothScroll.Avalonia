@@ -1,7 +1,7 @@
 ﻿<ResourceDictionary
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:presenters="clr-namespace:Avalonia.Controls.Presenters;assembly=SmoothScroll.Avalonia.Controls"
+    xmlns:controls="clr-namespace:SmoothScroll.Avalonia.Controls;assembly=SmoothScroll.Avalonia.Controls"
     x:ClassModifier="internal">
     <Design.PreviewWith>
         <ScrollViewer
@@ -27,17 +27,69 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
-                    <presenters:CompositionScrollContentPresenter
+                    <controls:ScrollPresenter
                         Name="PART_ContentPresenter"
                         Grid.Row="0"
-                        Grid.Column="0"                 
+                        Grid.Column="0"
                         Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}"
                         HorizontalSnapPointsAlignment="{TemplateBinding HorizontalSnapPointsAlignment}"
                         HorizontalSnapPointsType="{TemplateBinding HorizontalSnapPointsType}"
                         ScrollViewer.IsScrollInertiaEnabled="{TemplateBinding IsScrollInertiaEnabled}"
                         VerticalSnapPointsAlignment="{TemplateBinding VerticalSnapPointsAlignment}"
-                        VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}"/>
+                        VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}" />
+                    <ScrollBar
+                        Name="PART_HorizontalScrollBar"
+                        Grid.Row="1"
+                        Orientation="Horizontal" />
+                    <ScrollBar
+                        Name="PART_VerticalScrollBar"
+                        Grid.Column="1"
+                        Orientation="Vertical" />
+                    <Panel
+                        x:Name="PART_ScrollBarsSeparator"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Background="{DynamicResource ScrollViewerScrollBarsSeparatorBackground}"
+                        Opacity="0">
+                        <Panel.Transitions>
+                            <Transitions>
+                                <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                            </Transitions>
+                        </Panel.Transitions>
+                    </Panel>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+        <Style Selector="^[IsExpanded=true] /template/ Panel#PART_ScrollBarsSeparator">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="^[AllowAutoHide=True] /template/ ScrollContentPresenter#PART_ContentPresenter">
+            <Setter Property="Grid.ColumnSpan" Value="2" />
+            <Setter Property="Grid.RowSpan" Value="2" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type controls:ScrollView}" TargetType="controls:ScrollView">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+                    <controls:ScrollPresenter
+                        Name="PART_ContentPresenter"
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Padding="{TemplateBinding Padding}"
+                        Background="{TemplateBinding Background}"
+                        HorizontalSnapPointsAlignment="{TemplateBinding HorizontalSnapPointsAlignment}"
+                        HorizontalSnapPointsType="{TemplateBinding HorizontalSnapPointsType}"
+                        IsZoomEnabled="{TemplateBinding IsZoomEnabled}"
+                        MaxZoomFactor="{TemplateBinding MaxZoomFactor}"
+                        MinZoomFactor="{TemplateBinding MinZoomFactor}"
+                        ScrollViewer.IsScrollInertiaEnabled="{TemplateBinding IsScrollInertiaEnabled}"
+                        VerticalSnapPointsAlignment="{TemplateBinding VerticalSnapPointsAlignment}"
+                        VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}"
+                        ZoomFactor="{TemplateBinding ZoomFactor}" />
                     <ScrollBar
                         Name="PART_HorizontalScrollBar"
                         Grid.Row="1"

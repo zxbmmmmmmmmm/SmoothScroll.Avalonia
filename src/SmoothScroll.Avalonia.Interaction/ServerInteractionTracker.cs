@@ -3,7 +3,7 @@ using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Rendering.Composition.Server;
 using Avalonia.Rendering.Composition.Transport;
 
-namespace SmoothScroll.Avalonia.InteractionTracker;
+namespace SmoothScroll.Avalonia.Interaction;
 
 internal partial class ServerInteractionTracker
 {

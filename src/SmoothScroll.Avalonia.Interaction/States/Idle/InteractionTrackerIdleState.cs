@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Input;
 
-namespace SmoothScroll.Avalonia.InteractionTracker;
+namespace SmoothScroll.Avalonia.Interaction;
 
 internal sealed class InteractionTrackerIdleState : InteractionTrackerState
 {

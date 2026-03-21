@@ -16,5 +16,5 @@
     <Project Path="samples/SmoothScroll.Avalonia.Sample/SmoothScroll.Avalonia.Sample.csproj" />
   </Folder>
   <Project Path="src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj" Id="8e486682-3f15-487a-87e8-f8aa77cd2b09" />
-  <Project Path="src/SmoothScroll.Avalonia.InteractionTracker/SmoothScroll.Avalonia.InteractionTracker.csproj" />
+  <Project Path="src/SmoothScroll.Avalonia.Interaction/SmoothScroll.Avalonia.Interaction.csproj" />
 </Solution>

@@ -4,6 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Xml.Linq;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Interactivity;
@@ -11,13 +14,14 @@ using Avalonia.Layout;
 using Avalonia.Reactive;
 using Avalonia.Rendering.Composition;
 using Avalonia.Rendering.Composition.Animations;
-using Avalonia.Rendering.Composition.Server;
 using Avalonia.Threading;
 using Avalonia.Utilities;
 using Avalonia.VisualTree;
-using SmoothScroll.Avalonia.InteractionTracker;
+using PropertyGenerator.Avalonia;
+using SmoothScroll.Avalonia.Interaction;
+using Vector = Avalonia.Vector;
 
-namespace Avalonia.Controls.Presenters;
+namespace SmoothScroll.Avalonia.Controls;
 
 [Flags]
 public enum ScrollFeaturesEnum
@@ -31,103 +35,80 @@ public enum ScrollFeaturesEnum
 /// <summary>
 /// Presents a scrolling view of content inside a <see cref="ScrollViewer"/>.
 /// </summary>
-public sealed class CompositionScrollContentPresenter : ContentPresenter, IScrollable, IScrollAnchorProvider, IInteractionTrackerOwner
+public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, IScrollAnchorProvider, IInteractionTrackerOwner
 {
     private const double EdgeDetectionTolerance = 0.1;
     private const int ArrangeThrottleMs = 50;
 
     public static readonly AttachedProperty<ScrollFeaturesEnum> ScrollFeaturesProperty =
-        AvaloniaProperty.RegisterAttached<CompositionScrollContentPresenter, Control, ScrollFeaturesEnum>("ScrollFeatures", defaultValue: ScrollFeaturesEnum.None);
+        AvaloniaProperty.RegisterAttached<ScrollPresenter, Control, ScrollFeaturesEnum>("ScrollFeatures", defaultValue: ScrollFeaturesEnum.None);
 
     /// <summary>
     /// Defines the <see cref="CanHorizontallyScroll"/> property.
     /// </summary>
     public static readonly StyledProperty<bool> CanHorizontallyScrollProperty =
-        AvaloniaProperty.Register<CompositionScrollContentPresenter, bool>(nameof(CanHorizontallyScroll));
+        AvaloniaProperty.Register<ScrollPresenter, bool>(nameof(CanHorizontallyScroll));
 
     /// <summary>
     /// Defines the <see cref="CanVerticallyScroll"/> property.
     /// </summary>
     public static readonly StyledProperty<bool> CanVerticallyScrollProperty =
-        AvaloniaProperty.Register<CompositionScrollContentPresenter, bool>(nameof(CanVerticallyScroll));
+        AvaloniaProperty.Register<ScrollPresenter, bool>(nameof(CanVerticallyScroll));
 
     /// <summary>
     /// Defines the <see cref="Extent"/> property.
     /// </summary>
-    public static readonly DirectProperty<CompositionScrollContentPresenter, Size> ExtentProperty =
-        ScrollViewer.ExtentProperty.AddOwner<CompositionScrollContentPresenter>(
+    public static readonly DirectProperty<ScrollPresenter, Size> ExtentProperty =
+        ScrollViewer.ExtentProperty.AddOwner<ScrollPresenter>(
             o => o.Extent);
 
     /// <summary>
     /// Defines the <see cref="Offset"/> property.
     /// </summary>
     public static readonly StyledProperty<Vector> OffsetProperty =
-        ScrollViewer.OffsetProperty.AddOwner<CompositionScrollContentPresenter>(new(coerce: ScrollViewer.CoerceOffset));
+        ScrollViewer.OffsetProperty.AddOwner<ScrollPresenter>(new(coerce: ScrollViewer.CoerceOffset));
 
     /// <summary>
     /// Defines the <see cref="Viewport"/> property.
     /// </summary>
-    public static readonly DirectProperty<CompositionScrollContentPresenter, Size> ViewportProperty =
-        ScrollViewer.ViewportProperty.AddOwner<CompositionScrollContentPresenter>(
+    public static readonly DirectProperty<ScrollPresenter, Size> ViewportProperty =
+        ScrollViewer.ViewportProperty.AddOwner<ScrollPresenter>(
             o => o.Viewport);
 
     /// <summary>
     /// Defines the <see cref="HorizontalSnapPointsType"/> property.
     /// </summary>
     public static readonly StyledProperty<SnapPointsType> HorizontalSnapPointsTypeProperty =
-        ScrollViewer.HorizontalSnapPointsTypeProperty.AddOwner<CompositionScrollContentPresenter>();
+        ScrollViewer.HorizontalSnapPointsTypeProperty.AddOwner<ScrollPresenter>();
 
     /// <summary>
     /// Defines the <see cref="VerticalSnapPointsType"/> property.
     /// </summary>
     public static readonly StyledProperty<SnapPointsType> VerticalSnapPointsTypeProperty =
-        ScrollViewer.VerticalSnapPointsTypeProperty.AddOwner<CompositionScrollContentPresenter>();
+        ScrollViewer.VerticalSnapPointsTypeProperty.AddOwner<ScrollPresenter>();
 
     /// <summary>
     /// Defines the <see cref="HorizontalSnapPointsAlignment"/> property.
     /// </summary>
     public static readonly StyledProperty<SnapPointsAlignment> HorizontalSnapPointsAlignmentProperty =
-        ScrollViewer.HorizontalSnapPointsAlignmentProperty.AddOwner<CompositionScrollContentPresenter>();
+        ScrollViewer.HorizontalSnapPointsAlignmentProperty.AddOwner<ScrollPresenter>();
 
     /// <summary>
     /// Defines the <see cref="VerticalSnapPointsAlignment"/> property.
     /// </summary>
     public static readonly StyledProperty<SnapPointsAlignment> VerticalSnapPointsAlignmentProperty =
-        ScrollViewer.VerticalSnapPointsAlignmentProperty.AddOwner<CompositionScrollContentPresenter>();
+        ScrollViewer.VerticalSnapPointsAlignmentProperty.AddOwner<ScrollPresenter>();
 
     /// <summary>
     /// Defines the <see cref="IsScrollChainingEnabled"/> property.
     /// </summary>
     public static readonly StyledProperty<bool> IsScrollChainingEnabledProperty =
-        ScrollViewer.IsScrollChainingEnabledProperty.AddOwner<CompositionScrollContentPresenter>();
+        ScrollViewer.IsScrollChainingEnabledProperty.AddOwner<ScrollPresenter>();
 
-    /// <summary>
-    /// Defines the <see cref="MinZoomFactor"/> property.
-    /// </summary>
-    public static readonly StyledProperty<double> MinZoomFactorProperty =
-        AvaloniaProperty.Register<CompositionScrollContentPresenter, double>(nameof(MinZoomFactor), 0.1);
-
-    /// <summary>
-    /// Defines the <see cref="MaxZoomFactor"/> property.
-    /// </summary>
-    public static readonly StyledProperty<double> MaxZoomFactorProperty =
-        AvaloniaProperty.Register<CompositionScrollContentPresenter, double>(nameof(MaxZoomFactor), 10.0);
-
-    /// <summary>
-    /// Defines the <see cref="ZoomFactor"/> property.
-    /// </summary>
-    public static readonly StyledProperty<double> ZoomFactorProperty =
-        AvaloniaProperty.Register<CompositionScrollContentPresenter, double>(nameof(ZoomFactor), 1.0);
-
-    /// <summary>
-    /// Defines the <see cref="IsZoomEnabled"/> property.
-    /// </summary>
-    public static readonly StyledProperty<bool> IsZoomEnabledProperty =
-        AvaloniaProperty.Register<CompositionScrollContentPresenter, bool>(nameof(IsZoomEnabled), false);
 
 
     //private ScrollFeaturesEnum _scrollFeatures = ScrollFeaturesEnum.None;
-    private InteractionTracker? _interactionTracker;
+    private Interaction.InteractionTracker? _interactionTracker;
     private InputElementInteractionSource? _interactionSource;
     private CompositionAnimationGroup? _animationGroup;
     private bool _compositionUpdate;
@@ -155,18 +136,18 @@ public sealed class CompositionScrollContentPresenter : ContentPresenter, IScrol
     private InteractionTrackerInertiaStateEnteredArgs? _inertiaArgs;
     private Stopwatch _throttleStopWatch = new();
     /// <summary>
-    /// Initializes static members of the <see cref="CompositionScrollContentPresenter"/> class.
+    /// Initializes static members of the <see cref="ScrollPresenter"/> class.
     /// </summary>
-    static CompositionScrollContentPresenter()
+    static ScrollPresenter()
     {
-        ClipToBoundsProperty.OverrideDefaultValue(typeof(CompositionScrollContentPresenter), true);
+        ClipToBoundsProperty.OverrideDefaultValue(typeof(ScrollPresenter), true);
         AffectsMeasure<ScrollContentPresenter>(CanHorizontallyScrollProperty, CanVerticallyScrollProperty);
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CompositionScrollContentPresenter"/> class.
+    /// Initializes a new instance of the <see cref="ScrollPresenter"/> class.
     /// </summary>
-    public CompositionScrollContentPresenter()
+    public ScrollPresenter()
     {
         AddHandler(RequestBringIntoViewEvent, BringIntoViewRequested);
         _throttleStopWatch.Start();
@@ -280,38 +261,26 @@ public sealed class CompositionScrollContentPresenter : ContentPresenter, IScrol
     /// <summary>
     /// Gets or sets the minimum zoom factor.
     /// </summary>
-    public double MinZoomFactor
-    {
-        get => GetValue(MinZoomFactorProperty);
-        set => SetValue(MinZoomFactorProperty, value);
-    }
+    [GeneratedStyledProperty(0.1)]
+    public partial double MinZoomFactor { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum zoom factor.
     /// </summary>
-    public double MaxZoomFactor
-    {
-        get => GetValue(MaxZoomFactorProperty);
-        set => SetValue(MaxZoomFactorProperty, value);
-    }
+    [GeneratedStyledProperty(10)]
+    public partial double MaxZoomFactor { get; set; }
 
     /// <summary>
     /// Gets or sets the current zoom factor.
     /// </summary>
-    public double ZoomFactor
-    {
-        get => GetValue(ZoomFactorProperty);
-        set => SetValue(ZoomFactorProperty, value);
-    }
+    [GeneratedStyledProperty(1)]
+    public partial double ZoomFactor { get; set; }
 
     /// <summary>
     /// Gets or sets whether zooming is enabled.
     /// </summary>
-    public bool IsZoomEnabled
-    {
-        get => GetValue(IsZoomEnabledProperty);
-        set => SetValue(IsZoomEnabledProperty, value);
-    }
+    [GeneratedStyledProperty]
+    public partial bool IsZoomEnabled { get; set; }
 
     /// <inheritdoc/>
     Control? IScrollAnchorProvider.CurrentAnchor
@@ -628,7 +597,7 @@ public sealed class CompositionScrollContentPresenter : ContentPresenter, IScrol
     }
 
 
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    partial void OnPropertyChangedOverride(AvaloniaPropertyChangedEventArgs change)
     {
         if (change.Property == OffsetProperty)
         {
@@ -671,7 +640,7 @@ public sealed class CompositionScrollContentPresenter : ContentPresenter, IScrol
             {
                 _owner.Extent = change.GetNewValue<Size>();
             }
-            if(!_scaleChanged)
+            if (!_scaleChanged)
                 CoerceValue(OffsetProperty);
         }
         else if (change.Property == ViewportProperty)

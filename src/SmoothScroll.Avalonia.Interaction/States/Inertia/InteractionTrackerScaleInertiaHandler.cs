@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Rendering.Composition.Server;
 using Avalonia.Threading;
 
-namespace SmoothScroll.Avalonia.InteractionTracker;
+namespace SmoothScroll.Avalonia.Interaction;
 
 internal class InteractionTrackerScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHandler, IServerClockItem
 {

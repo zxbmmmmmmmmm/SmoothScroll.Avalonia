@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Rendering.Composition.Server;
 
-namespace SmoothScroll.Avalonia.InteractionTracker;
+namespace SmoothScroll.Avalonia.Interaction;
 internal sealed partial class InteractionTrackerActiveInputInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
 {
     private readonly InteractionTracker _interactionTracker;

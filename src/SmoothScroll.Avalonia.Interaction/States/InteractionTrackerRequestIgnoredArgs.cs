@@ -1,4 +1,4 @@
-﻿namespace SmoothScroll.Avalonia.InteractionTracker;
+﻿namespace SmoothScroll.Avalonia.Interaction;
 
 public class InteractionTrackerRequestIgnoredArgs
 {

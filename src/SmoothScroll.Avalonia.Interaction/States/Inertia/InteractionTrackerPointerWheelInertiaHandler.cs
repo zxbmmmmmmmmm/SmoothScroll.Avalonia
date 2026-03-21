@@ -2,7 +2,7 @@
 using Avalonia;
 using Avalonia.Rendering.Composition.Server;
 
-namespace SmoothScroll.Avalonia.InteractionTracker;
+namespace SmoothScroll.Avalonia.Interaction;
 internal class InteractionTrackerPointerWheelInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
 {
     // InteractionTracker works at 60 FPS, per documentation

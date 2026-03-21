@@ -16,9 +16,10 @@
     <PackageReference Include="IgnoresAccessChecksToGenerator">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="PropertyGenerator.Avalonia" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SmoothScroll.Avalonia.InteractionTracker\SmoothScroll.Avalonia.InteractionTracker.csproj" />
+    <ProjectReference Include="..\SmoothScroll.Avalonia.Interaction\SmoothScroll.Avalonia.Interaction.csproj" />
   </ItemGroup>
 
 </Project>

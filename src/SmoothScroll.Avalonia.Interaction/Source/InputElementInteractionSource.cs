@@ -1,9 +1,9 @@
 ﻿using Avalonia;
 using Avalonia.Input;
-using Avalonia.Input.GestureRecognizers;
 using Avalonia.Platform;
+using SmoothScroll.Avalonia.Interaction.Helpers;
 
-namespace SmoothScroll.Avalonia.InteractionTracker;
+namespace SmoothScroll.Avalonia.Interaction;
 
 public class InputElementInteractionSource : IDisposable
 {

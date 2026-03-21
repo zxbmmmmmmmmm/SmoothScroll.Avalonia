@@ -1,6 +1,6 @@
 ﻿using Avalonia;
 
-namespace SmoothScroll.Avalonia.InteractionTracker;
+namespace SmoothScroll.Avalonia.Interaction;
 
 public sealed class InteractionTrackerValuesChangedArgs
 {

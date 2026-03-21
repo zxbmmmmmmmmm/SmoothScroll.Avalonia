@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Smooth.Avalonia.Sample\SmoothScroll.Avalonia.Sample.csproj" />
     <ProjectReference Include="..\SmoothScroll.Avalonia.Sample\SmoothScroll.Avalonia.Sample.csproj" />
   </ItemGroup>
 </Project>
