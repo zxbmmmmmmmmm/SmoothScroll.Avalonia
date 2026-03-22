@@ -9,6 +9,13 @@ Implement WinUI's `InteractionTracker` and `ScrollView` in Avalonia.
 - Multi-touch support
 - Physics-based overscroll bounce animations
 
+https://github.com/user-attachments/assets/fbd26c2a-8f18-44e3-abfd-0c249a71d893
+
+> [!WARNING]
+> This is a **experimental** project.
+> 
+> The implemention contains some hack of Avalonia composition renderer.
+
 ## ScrollPresenter 
 
 You can replace `ScrollContentPresenter` with `ScrollPresenter` to enable smooth scrolling for `ScrollViewer`
