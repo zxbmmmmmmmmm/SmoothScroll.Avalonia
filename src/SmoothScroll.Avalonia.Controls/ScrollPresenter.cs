@@ -525,7 +525,9 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _arranging = true;
         try
         {
-            var size = new Size(
+            var size = IsZoomEnabled
+                ? finalSize
+                : new Size(
     CanHorizontallyScroll ? Math.Max(Child!.DesiredSize.Inflate(Padding).Width, finalSize.Width) : finalSize.Width,
     CanVerticallyScroll ? Math.Max(Child!.DesiredSize.Inflate(Padding).Height, finalSize.Height) : finalSize.Height);
 
