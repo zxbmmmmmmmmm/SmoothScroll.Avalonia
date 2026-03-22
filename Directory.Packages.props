@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1" />
     <PackageVersion Include="IgnoresAccessChecksToGenerator" Version="0.8.0" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />

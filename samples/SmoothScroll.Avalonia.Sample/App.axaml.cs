@@ -6,6 +6,7 @@ using System.Linq;
 using Avalonia.Markup.Xaml;
 using SmoothScroll.Avalonia.Sample.ViewModels;
 using SmoothScroll.Avalonia.Sample.Views;
+using System.Diagnostics;
 
 namespace SmoothScroll.Avalonia.Sample;
 
@@ -35,7 +36,14 @@ public partial class App : Application
             };
         }
 
+        Dispatcher.UnhandledException += OnUnhandledException;
+
         base.OnFrameworkInitializationCompleted();
     }
 
+    private void OnUnhandledException(object sender, global::Avalonia.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        Debugger.BreakForUserUnhandledException(e.Exception);
+        e.Handled = true;
+    }
 }
