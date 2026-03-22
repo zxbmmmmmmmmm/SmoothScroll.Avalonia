@@ -26,7 +26,7 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+                <Panel>
                     <controls:ScrollPresenter
                         Name="PART_ContentPresenter"
                         Grid.Row="0"
@@ -41,15 +41,15 @@
                     <ScrollBar
                         Name="PART_HorizontalScrollBar"
                         Grid.Row="1"
+                        VerticalAlignment="Bottom"
                         Orientation="Horizontal" />
                     <ScrollBar
                         Name="PART_VerticalScrollBar"
                         Grid.Column="1"
+                        HorizontalAlignment="Right"
                         Orientation="Vertical" />
                     <Panel
                         x:Name="PART_ScrollBarsSeparator"
-                        Grid.Row="1"
-                        Grid.Column="1"
                         Background="{DynamicResource ScrollViewerScrollBarsSeparatorBackground}"
                         Opacity="0">
                         <Panel.Transitions>
@@ -58,7 +58,7 @@
                             </Transitions>
                         </Panel.Transitions>
                     </Panel>
-                </Grid>
+                </Panel>
             </ControlTemplate>
         </Setter>
         <Style Selector="^[IsExpanded=true] /template/ Panel#PART_ScrollBarsSeparator">
