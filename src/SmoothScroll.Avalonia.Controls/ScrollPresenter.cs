@@ -382,31 +382,33 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         var compositionVisual = ElementComposition.GetElementVisual(this);
         _interactionTracker = compositionVisual!.Compositor.CreateInteractionTracker(this);
+        //_interactionTracker.SetScale(ZoomFactor,0);
         _interactionTracker.MinScale = MinZoomFactor;
         _interactionTracker.MaxScale = MaxZoomFactor;
         _interactionSource = new InputElementInteractionSource(this, _interactionTracker);
+        UpdateInteractionOptions();
+
+        Child?.AttachedToVisualTree += OnChildAttachedToVisualTree;
+    }
+
+    private void OnChildAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        SyncInteractionTrackerState();
+        // 生成器生成出的 CompositionVisual 只在 Client 端设置了默认值，但 Server 端没有
+        // 这会导致 Scale 被初始化为 0，导致内容不可见，需要滚动一次后触发 ExpressionAnimation 更新才能看到内容
+        // 强制初始化 Scale 以确保元素可见
+        // 这似乎只在有动画时会出现这种问题，具体原因有待探究
+        var childVisual = ElementComposition.GetElementVisual(Child!);
+        var scale = new Vector3D(_interactionTracker.Scale, _interactionTracker.Scale, _interactionTracker.Scale);
+        childVisual!.Server.Scale = scale;
         UpdateScrollAnimation();
 
-        //UpdateScrollAnimation();
-        UpdateInteractionOptions();    
-        SyncInteractionTrackerState();
-        if (Child is not null)
-        {
-            // 生成器生成出的 CompositionVisual 只在 Client 端设置了默认值，但 Server 端没有
-            // 这会导致 Scale 被初始化为 0，导致内容不可见，需要滚动一次后触发 ExpressionAnimation 更新才能看到内容
-            // 强制初始化 Scale 以确保元素可见
-            // 这似乎只在有动画时会出现这种问题，具体原因有待探究。。
-            var childVisual = ElementComposition.GetElementVisual(Child);
-            childVisual?.Server.Scale = new Vector3D(1, 1, 1);
-        }
-
-
-        UpdateInteractionOptions();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        Child?.AttachedToVisualTree -= OnChildAttachedToVisualTree;
         _interactionTracker?.Dispose();
         _interactionTracker = null;
         _interactionSource?.Dispose();
@@ -494,7 +496,9 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
 
         var availableWithPadding = availableSize.Deflate(Padding);
-        var constraint = new Size(
+        var constraint = IsZoomEnabled
+            ? new Size(double.PositiveInfinity, double.PositiveInfinity)
+            : new Size(
             CanHorizontallyScroll ? double.PositiveInfinity : availableWithPadding.Width,
             CanVerticallyScroll ? double.PositiveInfinity : availableWithPadding.Height);
 
@@ -516,7 +520,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         {
             return base.ArrangeOverride(finalSize);
         }
-
         return ArrangeWithAnchoring(finalSize);
     }
 
@@ -578,7 +581,14 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             }
             else
             {
-                ArrangeOverrideImpl(size, -Offset);
+                if (IsZoomEnabled)
+                {
+                    ArrangeOverrideImpl(size, -Offset - new Point(_interactionTracker.Position.X , _interactionTracker.Position.Y));
+                }
+                else
+                {
+                    ArrangeOverrideImpl(size, -Offset);
+                }
             }
 
             Viewport = finalSize;
@@ -595,6 +605,64 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         return finalSize;
     }
 
+    public new Size ArrangeOverrideImpl(Size finalSize, Vector offset)
+    {
+        if (this.Child == null)
+            return finalSize;
+        bool useLayoutRounding = this.UseLayoutRounding;
+        double layoutScale = LayoutHelper.GetLayoutScale((Layoutable)this);
+        Thickness thickness1 = this.Padding;
+        Thickness thickness2 = this.BorderThickness;
+        if (useLayoutRounding)
+        {
+            thickness1 = LayoutHelper.RoundLayoutThickness(thickness1, layoutScale);
+            thickness2 = LayoutHelper.RoundLayoutThickness(thickness2, layoutScale);
+        }
+        Thickness thickness3 = thickness1 + thickness2;
+        HorizontalAlignment contentAlignment1 = this.HorizontalContentAlignment;
+        VerticalAlignment contentAlignment2 = this.VerticalContentAlignment;
+        Size size1 = finalSize;
+        Size size2 = size1;
+        double x = offset.X;
+        double y = offset.Y;
+        if (contentAlignment1 != HorizontalAlignment.Stretch)
+            size2 = size2.WithWidth(Math.Min(size2.Width, this.DesiredSize.Width));
+        if (contentAlignment2 != VerticalAlignment.Stretch)
+            size2 = size2.WithHeight(Math.Min(size2.Height, this.DesiredSize.Height));
+        if (useLayoutRounding)
+        {
+            size2 = LayoutHelper.RoundLayoutSizeUp(size2, layoutScale);
+            size1 = LayoutHelper.RoundLayoutSizeUp(size1, layoutScale);
+        }
+        if (!IsZoomEnabled || CompositionMathHelpers.IsCloseReal(ZoomFactor, 1))
+        {
+            switch (contentAlignment1)
+            {
+                case HorizontalAlignment.Center:
+                    x += (size1.Width - size2.Width) / 2.0;
+                    break;
+                case HorizontalAlignment.Right:
+                    x += size1.Width - size2.Width;
+                    break;
+            }
+            switch (contentAlignment2)
+            {
+                case VerticalAlignment.Center:
+                    y += (size1.Height - size2.Height) / 2.0;
+                    break;
+                case VerticalAlignment.Bottom:
+                    y += size1.Height - size2.Height;
+                    break;
+            }
+        }
+
+        Point point = new Point(x, y);
+        if (useLayoutRounding)
+            point = LayoutHelper.RoundLayoutPoint(point, layoutScale);
+        this.Child.Arrange(new Rect(point, size2).Deflate(thickness3));
+        return finalSize;
+    }
+
     private void SyncInteractionTrackerState()
     {
         if (_interactionTracker == null)
@@ -605,8 +673,9 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         try
         {
             _compositionUpdate = true;
-            _interactionTracker.TryUpdateScale(ZoomFactor);
-            _interactionTracker.TryUpdatePosition(new Vector3D(Offset.X, Offset.Y, 0), InteractionTrackerClampingOption.Disabled);
+
+            _interactionTracker.SetPositionAndScale(new Vector3D(Offset.X, Offset.Y, 0), ZoomFactor, 0);
+
         }
         finally
         {
