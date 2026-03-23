@@ -528,11 +528,21 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _arranging = true;
         try
         {
-            var size = IsZoomEnabled
-                ? finalSize
-                : new Size(
-    CanHorizontallyScroll ? Math.Max(Child!.DesiredSize.Inflate(Padding).Width, finalSize.Width) : finalSize.Width,
-    CanVerticallyScroll ? Math.Max(Child!.DesiredSize.Inflate(Padding).Height, finalSize.Height) : finalSize.Height);
+            double width = 0;
+            double height = 0;
+            if (IsZoomEnabled)
+            {
+                width = (HorizontalContentAlignment == HorizontalAlignment.Stretch) ?
+                    Math.Max(Child!.DesiredSize.Inflate(Padding).Width, finalSize.Width) : finalSize.Width;
+                height = (VerticalContentAlignment == VerticalAlignment.Stretch)?
+                    Math.Max(Child!.DesiredSize.Inflate(Padding).Height, finalSize.Height) : finalSize.Height;
+            }
+            else
+            {
+                width = CanHorizontallyScroll ? Math.Max(Child!.DesiredSize.Inflate(Padding).Width, finalSize.Width) : finalSize.Width;
+                height = CanVerticallyScroll ? Math.Max(Child!.DesiredSize.Inflate(Padding).Height, finalSize.Height) : finalSize.Height;
+            }
+            var size = new Size(width, height);
 
             var isAnchoring = Offset.X >= EdgeDetectionTolerance || Offset.Y >= EdgeDetectionTolerance;
 
@@ -674,8 +684,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         {
             _compositionUpdate = true;
 
-            _interactionTracker.TryUpdatePosition(new Vector3D(Offset.X, Offset.Y, 0));
-            _interactionTracker.TryUpdateScale(ZoomFactor);
+            _interactionTracker.TryUpdatePositionAndScale(new Vector3D(Offset.X, Offset.Y, 0), ZoomFactor);
 
         }
         finally

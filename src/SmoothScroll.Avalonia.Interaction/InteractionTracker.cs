@@ -159,6 +159,8 @@ public partial class InteractionTracker : CompositionObject
     {
         SetScale(scale, 0);
     }
+
+    public void TryUpdatePositionAndScale(Vector3D newPosition, double newScale) => SetPositionAndScale(newPosition, newScale, 0);
 }
 
 public static class CompositorExtensions

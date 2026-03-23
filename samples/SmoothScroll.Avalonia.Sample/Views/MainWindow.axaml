@@ -19,5 +19,6 @@
         <TabItem Header="List">
             <pages:ListPage />
         </TabItem>
+        <TabItem Header="Test" />
     </TabControl>
 </Window>
