@@ -21,13 +21,26 @@ public partial class InteractionTracker : CompositionObject
     public Vector3D MinPosition
     {
         get => Server.MinPosition;
-        set => UpdatePositionBounds(value, Server.MaxPosition);
+        set {
+            if (Server.MinPosition == value)
+                return;
+            Compositor.Loop.Wakeup();
+            Server.MinPosition = value;
+            _state.ReceiveBoundsUpdate();
+        }
     }
 
     public Vector3D MaxPosition
     { 
         get => Server.MaxPosition;
-        set => UpdatePositionBounds(Server.MinPosition, value);
+        set
+        {
+            if (Server.MaxPosition == value)
+                return;
+            Compositor.Loop.Wakeup();
+            Server.MaxPosition = value;
+            _state.ReceiveBoundsUpdate();
+        }
     }
 
     public Vector3D? PositionInertiaDecayRate { get; set; }
@@ -76,19 +89,6 @@ public partial class InteractionTracker : CompositionObject
         Server.Position = newPosition;
         Server.Scale = newScale;
         Owner?.ValuesChanged(this, new InteractionTrackerValuesChangedArgs(newPosition, newScale, requestId));
-    }
-
-    internal void UpdatePositionBounds(Vector3D minPosition, Vector3D maxPosition)
-    {
-        if(Server.MinPosition == minPosition && Server.MaxPosition == maxPosition)
-            return;
-        if (minPosition.X > maxPosition.X || minPosition.Y > maxPosition.Y)
-            return;
-        Compositor.Loop.Wakeup();
-
-        Server.MinPosition = minPosition;
-        Server.MaxPosition = maxPosition;
-        _state.ReceiveBoundsUpdate();
     }
 
     internal void ChangeState(InteractionTrackerState newState)

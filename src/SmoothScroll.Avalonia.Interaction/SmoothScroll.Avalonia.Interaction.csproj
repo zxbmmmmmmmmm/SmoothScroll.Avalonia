@@ -6,10 +6,6 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="SmoothScroll.Avalonia.Controls" />
-  </ItemGroup>
   
   <ItemGroup>
     <IgnoresAccessChecksTo Include="Avalonia.Base" />

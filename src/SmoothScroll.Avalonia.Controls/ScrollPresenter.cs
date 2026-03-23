@@ -634,7 +634,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             size2 = LayoutHelper.RoundLayoutSizeUp(size2, layoutScale);
             size1 = LayoutHelper.RoundLayoutSizeUp(size1, layoutScale);
         }
-        if (!IsZoomEnabled || CompositionMathHelpers.IsCloseReal(ZoomFactor, 1))
+        if (!IsZoomEnabled || Child.PreviousArrange is null)
         {
             switch (contentAlignment1)
             {
@@ -674,7 +674,8 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         {
             _compositionUpdate = true;
 
-            _interactionTracker.SetPositionAndScale(new Vector3D(Offset.X, Offset.Y, 0), ZoomFactor, 0);
+            _interactionTracker.TryUpdatePosition(new Vector3D(Offset.X, Offset.Y, 0));
+            _interactionTracker.TryUpdateScale(ZoomFactor);
 
         }
         finally
@@ -1199,7 +1200,8 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         var minPosition = ComputeMinPositionForAlignment(baseExtent, scale);
         var maxPosition = ComputeMaxPositionForAlignment(baseExtent, scale);
 
-        _interactionTracker.UpdatePositionBounds(new Vector3D(minPosition.X, minPosition.Y, 0), new Vector3D(maxPosition.X, maxPosition.Y, 0));
+        _interactionTracker.MinPosition = new Vector3D(minPosition.X, minPosition.Y, 0);
+        _interactionTracker.MaxPosition = new Vector3D(maxPosition.X, maxPosition.Y, 0);
 
         var range = maxPosition - minPosition;
 

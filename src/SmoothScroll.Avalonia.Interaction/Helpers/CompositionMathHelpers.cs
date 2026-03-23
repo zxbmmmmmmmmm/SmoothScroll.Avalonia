@@ -2,13 +2,13 @@
 
 namespace SmoothScroll.Avalonia.Interaction;
 
-internal static class CompositionMathHelpers
+public static class CompositionMathHelpers
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool IsCloseReal(double a, double b, double epsilon = double.Epsilon)
+    public static bool IsCloseReal(double a, double b, double epsilon = double.Epsilon)
         => Math.Abs(a - b) <= epsilon;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool IsCloseRealZero(double a, double epsilon = double.Epsilon)
+    public static bool IsCloseRealZero(double a, double epsilon = double.Epsilon)
         => Math.Abs(a) < epsilon;
 }
