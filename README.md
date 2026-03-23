@@ -36,7 +36,8 @@ You can replace `ScrollContentPresenter` with `ScrollPresenter` to enable smooth
                     HorizontalSnapPointsType="{TemplateBinding HorizontalSnapPointsType}"
                     ScrollViewer.IsScrollInertiaEnabled="{TemplateBinding IsScrollInertiaEnabled}"
                     VerticalSnapPointsAlignment="{TemplateBinding VerticalSnapPointsAlignment}"
-                    VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}" />
+                    VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}"
+                    ZIndex="1"/>
                 <ScrollBar
                     Name="PART_HorizontalScrollBar"
                     Grid.Row="1"
