@@ -25,15 +25,14 @@
             VerticalContentAlignment="Center"
             HorizontalScrollBarVisibility="Hidden"
             IsZoomEnabled="True"
-            VerticalScrollBarVisibility="Hidden"
-            ZoomFactor="10">
+            VerticalScrollBarVisibility="Hidden">
             <Image Source="avares://SmoothScroll.Avalonia.Sample/Assets/Images/4074.bmp" Stretch="UniformToFill" />
         </controls:ScrollView>
         <Grid
             Margin="10"
             HorizontalAlignment="Left"
             VerticalAlignment="Top">
-            <TextBlock FontSize="16" Text="{Binding #ScrollView.ZoomFactor,Mode=OneWay, StringFormat=Zoom: {0:F1}x}" />
+            <TextBlock FontSize="16" Text="{Binding #ScrollView.ZoomFactor, Mode=OneWay, StringFormat=Zoom: {0:F1}x}" />
         </Grid>
     </Panel>
 

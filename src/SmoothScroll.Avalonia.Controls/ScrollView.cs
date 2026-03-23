@@ -18,10 +18,10 @@ public partial class ScrollView : ScrollViewer
     public partial double MaxZoomFactor { get; set; }
 
     /// <summary>
-    /// Gets or sets the current zoom factor.
+    /// Gets the current zoom factor.
     /// </summary>
-    [GeneratedStyledProperty(1)]
-    public partial double ZoomFactor { get; set; }
+    [GeneratedDirectProperty(1)]
+    public partial double ZoomFactor { get; private set; }
 
     /// <summary>
     /// Gets or sets whether zooming is enabled.
