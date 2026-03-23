@@ -90,7 +90,8 @@
                         ScrollViewer.IsScrollInertiaEnabled="{TemplateBinding IsScrollInertiaEnabled}"
                         VerticalSnapPointsAlignment="{TemplateBinding VerticalSnapPointsAlignment}"
                         VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}"
-                        ZoomFactor="{TemplateBinding ZoomFactor}" />
+                        ZoomFactor="{TemplateBinding ZoomFactor,
+                                                     Mode=TwoWay}" />
                     <ScrollBar
                         Name="PART_HorizontalScrollBar"
                         Grid.Row="1"

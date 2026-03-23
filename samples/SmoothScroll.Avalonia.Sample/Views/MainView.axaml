@@ -18,15 +18,23 @@
         -->
         <vm:MainViewModel />
     </Design.DataContext>
-    <Grid>
+    <Panel>
         <controls:ScrollView
+            x:Name="ScrollView"
             HorizontalContentAlignment="Center"
             VerticalContentAlignment="Center"
             HorizontalScrollBarVisibility="Hidden"
             IsZoomEnabled="True"
-            VerticalScrollBarVisibility="Hidden">
+            VerticalScrollBarVisibility="Hidden"
+            ZoomFactor="10">
             <Image Source="avares://SmoothScroll.Avalonia.Sample/Assets/Images/4074.bmp" Stretch="UniformToFill" />
         </controls:ScrollView>
-    </Grid>
+        <Grid
+            Margin="10"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top">
+            <TextBlock FontSize="16" Text="{Binding #ScrollView.ZoomFactor,Mode=OneWay, StringFormat=Zoom: {0:F1}x}" />
+        </Grid>
+    </Panel>
 
 </UserControl>
