@@ -399,7 +399,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         // 强制初始化 Scale 以确保元素可见
         // 这似乎只在有动画时会出现这种问题，具体原因有待探究
         var childVisual = ElementComposition.GetElementVisual(Child!);
-        var scale = new Vector3D(_interactionTracker.Scale, _interactionTracker.Scale, _interactionTracker.Scale);
+        var scale = new Vector3D(_interactionTracker!.Scale, _interactionTracker.Scale, _interactionTracker.Scale);
         childVisual!.Server.Scale = scale;
         UpdateScrollAnimation();
 
@@ -1291,39 +1291,16 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
     private void UpdateScrollAnimation()
     {
-        if (Child == null)
+        if (Child is null || !Child.IsAttachedToVisualTree())
             return;
-
-        var vis = ElementComposition.GetElementVisual(Child);
-        if (vis == null)
-            return;
-
-        EnsureScrollAnimation();
-        if (_animationGroup == null)
-            return;
-
-        vis.StartAnimationGroup(_animationGroup);
-    }
-
-    private void EnsureScrollAnimation()
-    {
-        if (_interactionTracker == null)
+        var compositionVisual = ElementComposition.GetElementVisual(Child)!;
+        if (_animationGroup is null)
         {
-            return;
-        }
-
-        if (_animationGroup == null && Child is not null)
-        {
-            var compositionVisual = ElementComposition.GetElementVisual(Child);
-
             var scrollAnimation = compositionVisual!.Compositor.CreateExpressionAnimation();
-
-            // 甚至没法直接使用 Tracker.Position ，一定要重新创建一个Vector3..解释器罪大恶极
-            // this.Target 的问题需要等待修复
             scrollAnimation.Expression =
                 "Vector3(Margin.X, Margin.Y, 0) - Vector3(Tracker.Position.X, Tracker.Position.Y, Tracker.Position.Z) + Vector3(this.Target.Offset.X, this.Target.Offset.Y, this.Target.Offset.Z)";
             scrollAnimation.Target = "Translation";
-            scrollAnimation.SetReferenceParameter("Tracker", _interactionTracker);
+            scrollAnimation.SetReferenceParameter("Tracker", _interactionTracker!);
             scrollAnimation.SetReferenceParameter("vis", compositionVisual);
 
             var margin = Child!.Margin + Padding;
@@ -1331,13 +1308,15 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
             var scaleAnimation = compositionVisual!.Compositor.CreateExpressionAnimation();
             scaleAnimation.Expression = "Vector3(Tracker.Scale, Tracker.Scale, Tracker.Scale)";
-            scaleAnimation.SetReferenceParameter("Tracker", _interactionTracker);
+            scaleAnimation.SetReferenceParameter("Tracker", _interactionTracker!);
             scaleAnimation.Target = "Scale";
 
-            _animationGroup = compositionVisual!.Compositor.CreateAnimationGroup();
+            _animationGroup = compositionVisual.Compositor.CreateAnimationGroup();
             _animationGroup.Add(scrollAnimation);
             _animationGroup.Add(scaleAnimation);
         }
+
+        compositionVisual.StartAnimationGroup(_animationGroup);
     }
 
     private void UpdateInteractionOptions()
