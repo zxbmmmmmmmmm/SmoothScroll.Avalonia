@@ -10,7 +10,6 @@
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
     <UseMonoRuntime>false</UseMonoRuntime>
-    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
