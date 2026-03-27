@@ -1134,7 +1134,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             try
             {
                 _compositionUpdate = true;
-                _scaleChanged = !CompositionMathHelpers.IsCloseReal(scale, ZoomFactor);
+                _scaleChanged = !MathUtilities.AreClose(scale, ZoomFactor);
 
                 UpdateScrollableAreaForScale(scale);
 
@@ -1347,7 +1347,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
     private Vector3D CalculateZoomPosition(Vector3D oldPosition, double oldScale, double newScale)
     {
-        if (MathUtilities.IsZero(oldScale) || CompositionMathHelpers.IsCloseReal(oldScale, newScale))
+        if (MathUtilities.IsZero(oldScale) || MathUtilities.AreClose(oldScale, newScale))
         {
             return oldPosition;
         }

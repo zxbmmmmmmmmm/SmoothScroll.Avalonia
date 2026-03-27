@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Rendering.Composition.Server;
+using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
 internal sealed partial class InteractionTrackerActiveInputInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
@@ -156,9 +157,9 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
                 var time = 0.0;
                 if (initialVelocity > minimumVelocity)
                 {
-                    if (!CompositionMathHelpers.IsCloseReal(decayRate, 1.0))
+                    if (!MathUtilities.AreClose(decayRate, 1.0))
                     {
-                        if (CompositionMathHelpers.IsCloseRealZero(decayRate) /*|| !_isInertiaEnabled*/)
+                        if (MathUtilities.IsZero(decayRate) /*|| !_isInertiaEnabled*/)
                         {
                             return 0.0f;
                         }
@@ -182,11 +183,11 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
 
         private double CalculateDeltaPosition(double time)
         {
-            if (CompositionMathHelpers.IsCloseReal(DecayRate, 1.0f))
+            if (MathUtilities.AreClose(DecayRate, 1.0f))
             {
                 return InitialVelocity * time;
             }
-            else if (CompositionMathHelpers.IsCloseRealZero(DecayRate) /*|| !_isInertiaEnabled*/)
+            else if (MathUtilities.IsZero(DecayRate) /*|| !_isInertiaEnabled*/)
             {
                 return 0.0f;
             }

@@ -2,6 +2,7 @@
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Rendering.Composition;
+using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
@@ -72,7 +73,7 @@ public partial class InteractionTracker : CompositionObject
 
     internal void SetScale(double newScale, int requestId)
     {
-        if (CompositionMathHelpers.IsCloseReal(Scale, newScale))
+        if (MathUtilities.AreClose(Scale, newScale))
             return;
         Compositor.Loop.Wakeup();
 
@@ -82,7 +83,7 @@ public partial class InteractionTracker : CompositionObject
 
     internal void SetPositionAndScale(Vector3D newPosition, double newScale, int requestId)
     {
-        if (CompositionMathHelpers.IsCloseReal(Scale, newScale) && Position == newPosition)
+        if (MathUtilities.AreClose(Scale, newScale) && Position == newPosition)
             return;
         Compositor.Loop.Wakeup();
 

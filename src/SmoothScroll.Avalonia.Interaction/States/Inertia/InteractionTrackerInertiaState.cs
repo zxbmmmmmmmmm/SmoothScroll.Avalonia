@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Input;
+using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
@@ -22,7 +23,7 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
 
         if (isFromPointerWheel)
         {
-            if (CompositionMathHelpers.IsCloseRealZero(scaleVelocity))
+            if (MathUtilities.IsZero(scaleVelocity))
             {
                 _handler = new InteractionTrackerPointerWheelInertiaHandler(
                     interactionTracker.Server!.Compositor,

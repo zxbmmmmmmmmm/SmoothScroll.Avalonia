@@ -2,6 +2,7 @@
 using Avalonia;
 using Avalonia.Rendering.Composition.Server;
 using Avalonia.Threading;
+using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
@@ -92,14 +93,14 @@ internal class InteractionTrackerScaleInertiaHandler : ServerObject, IInteractio
 
         var modifiedScale = Math.Clamp(scale, _interactionTracker.MinScale, _interactionTracker.MaxScale);
 
-        if (!CompositionMathHelpers.IsCloseReal(modifiedScale, _interactionTracker.MinScale)
-            && !CompositionMathHelpers.IsCloseReal(modifiedScale, _interactionTracker.MaxScale))
+        if (!MathUtilities.AreClose(modifiedScale, _interactionTracker.MinScale)
+            && !MathUtilities.AreClose(modifiedScale, _interactionTracker.MaxScale))
         {
             _interactionTracker.SetPositionAndScale(scaledNewPosition, modifiedScale, 0);
         }
 
         var hasStoppedByScaleVelocity = Math.Abs(ScaleVelocity) <= Epsilon;
-        var hasReachedScaleTarget = CompositionMathHelpers.IsCloseReal(scale, FinalModifiedScale, 0.001);
+        var hasReachedScaleTarget = MathUtilities.AreClose(scale, FinalModifiedScale, 0.001);
         var hasTimedOut = elapsedSeconds >= MaxDurationSeconds;
 
         if (hasStoppedByScaleVelocity || hasReachedScaleTarget || hasTimedOut)
