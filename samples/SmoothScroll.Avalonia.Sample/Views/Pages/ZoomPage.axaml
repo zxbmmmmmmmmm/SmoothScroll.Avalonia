@@ -18,11 +18,23 @@
             VerticalScrollBarVisibility="Hidden">
             <Image Source="avares://SmoothScroll.Avalonia.Sample/Assets/Images/4074.bmp" Stretch="UniformToFill" />
         </controls:ScrollView>
-        <Grid
-            Margin="10"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top">
-            <TextBlock FontSize="16" Text="{Binding #ScrollView.ZoomFactor, Mode=OneWay, StringFormat=Zoom: {0:F1}x}" />
-        </Grid>
+        <Border
+            Margin="24"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+            CornerRadius="4">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock FontSize="16" Text="{Binding #ScrollView.ZoomFactor, Mode=OneWay, StringFormat=Zoom: {0:F1}x}" />
+                <Button
+                    x:Name="ZoomInButton"
+                    Click="ZoomInButton_Click"
+                    Content="+" />
+                <Button
+                    x:Name="ZoomOutButton"
+                    Click="ZoomOutButton_Click"
+                    Content="-" />
+            </StackPanel>
+        </Border>
     </Panel>
 </UserControl>

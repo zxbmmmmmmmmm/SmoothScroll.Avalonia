@@ -377,31 +377,13 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        // AttachToVisualTree -> AttachToScrollViewer -> CreateInteractionTracker
-        // OnChildAttachedToVisualTree -> UpdateScrollAnimation
         base.OnAttachedToVisualTree(e);
         AttachToScrollViewer();
 
-        var compositionVisual = ElementComposition.GetElementVisual(this);
-        _interactionTracker = compositionVisual!.Compositor.CreateInteractionTracker(this);
-        _interactionTracker.MinScale = MinZoomFactor;
-        _interactionTracker.MaxScale = MaxZoomFactor;
-        _interactionSource = new InputElementInteractionSource(this, _interactionTracker);
-        UpdateInteractionOptions();
-
-        Child?.AttachedToVisualTree += OnChildAttachedToVisualTree;
-    }
-
-    private void OnChildAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
-    {
-        SyncInteractionTrackerState();
-        // HACK: We must set ServerObject's scale manually as it's default value is 0.
-        // Otherwise, the visual will be invisible.
-        var childVisual = ElementComposition.GetElementVisual(Child!);
-        var scale = new Vector3D(_interactionTracker!.Scale, _interactionTracker.Scale, _interactionTracker.Scale);
-        childVisual!.Server.Scale = scale;
-        EnsureScrollAnimation();
-
+        if (Child?.IsAttachedToVisualTree() == true)
+            Initialize();
+        else
+            Child?.AttachedToVisualTree += OnChildAttachedToVisualTree;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -414,6 +396,41 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _interactionSource = null;
         _animationGroup?.Dispose();
         _animationGroup = null;
+    }
+
+    private void OnChildAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        Initialize();
+    }
+
+    private void Initialize()
+    {
+        InitializeInteractionTracker();
+        // HACK: We must set ServerObject's scale manually as it's default value is 0.
+        // Otherwise, the visual will be invisible.
+        var childVisual = ElementComposition.GetElementVisual(Child!);
+        var scale = new Vector3D(_interactionTracker!.Scale, _interactionTracker.Scale, _interactionTracker.Scale);
+        childVisual!.Server.Scale = scale;
+        EnsureScrollAnimation();
+    }
+
+    private void InitializeInteractionTracker()
+    {
+        var compositionVisual = ElementComposition.GetElementVisual(this);
+        _interactionTracker = compositionVisual!.Compositor.CreateInteractionTracker(this);
+        _interactionTracker.MinScale = MinZoomFactor;
+        _interactionTracker.MaxScale = MaxZoomFactor;
+        _interactionSource = new InputElementInteractionSource(this, _interactionTracker);
+        try
+        {
+            _compositionUpdate = true;
+            _interactionTracker.TryUpdatePositionAndScale(new Vector3D(Offset.X, Offset.Y, 0), ZoomFactor);
+        }
+        finally
+        {
+            _compositionUpdate = false;
+        }
+        UpdateInteractionOptions();
     }
 
     /// <summary>
@@ -533,7 +550,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             {
                 width = (HorizontalContentAlignment == HorizontalAlignment.Stretch) ?
                     Math.Max(Child!.DesiredSize.Inflate(Padding).Width, finalSize.Width) : finalSize.Width;
-                height = (VerticalContentAlignment == VerticalAlignment.Stretch)?
+                height = (VerticalContentAlignment == VerticalAlignment.Stretch) ?
                     Math.Max(Child!.DesiredSize.Inflate(Padding).Height, finalSize.Height) : finalSize.Height;
             }
             else
@@ -592,7 +609,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             {
                 if (IsZoomEnabled)
                 {
-                    ArrangeOverrideImpl(size, -Offset - new Point(_interactionTracker.Position.X , _interactionTracker.Position.Y));
+                    ArrangeOverrideImpl(size, -Offset - new Point(_interactionTracker.Position.X, _interactionTracker.Position.Y));
                 }
                 else
                 {
@@ -670,26 +687,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             point = LayoutHelper.RoundLayoutPoint(point, layoutScale);
         this.Child.Arrange(new Rect(point, size2).Deflate(thickness3));
         return finalSize;
-    }
-
-    private void SyncInteractionTrackerState()
-    {
-        if (_interactionTracker == null)
-        {
-            return;
-        }
-
-        try
-        {
-            _compositionUpdate = true;
-
-            _interactionTracker.TryUpdatePositionAndScale(new Vector3D(Offset.X, Offset.Y, 0), ZoomFactor);
-
-        }
-        finally
-        {
-            _compositionUpdate = false;
-        }
     }
 
     private void RequestArrangeThrottled()
@@ -1221,11 +1218,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             ? InteractionSourceMode.Disabled
             : InteractionSourceMode.EnabledWithInertia;
     }
-
-
-
-
-
     private Vector ComputeMinPositionForAlignment(Size unscaledExtent, double scale)
     {
         var scaledWidthMinusViewport = (unscaledExtent.Width * scale) - Viewport.Width;
@@ -1252,7 +1244,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         var scaledWidthMinusViewport = (unscaledExtent.Width * scale) - Viewport.Width;
         var scaledHeightMinusViewport = (unscaledExtent.Height * scale) - Viewport.Height;
 
-        var maxX =  scaledWidthMinusViewport;
+        var maxX = scaledWidthMinusViewport;
         var maxY = scaledHeightMinusViewport;
 
         if (Child is { HorizontalAlignment: HorizontalAlignment.Center or HorizontalAlignment.Stretch })
@@ -1334,6 +1326,42 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         //source.IsScrollInertiaEnabled = ScrollViewer.GetIsScrollInertiaEnabled(this);
         //source.ScrollFeatures = GetScrollFeatures(this);
     }
+
+    public void ZoomBy(double zoomFactorDelta)
+    {
+        if (_interactionTracker is null)
+            return;
+        var newScale = Math.Clamp(_interactionTracker.Scale + zoomFactorDelta, _interactionTracker.MinScale, _interactionTracker.MaxScale);
+        var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
+        _interactionTracker.TryUpdatePositionAndScale(newPosition, newScale);
+    }
+
+    public void ZoomTo(double zoomFactor)
+    {
+        if (_interactionTracker is null)
+            return;
+        var newScale = Math.Clamp(zoomFactor, _interactionTracker.MinScale, _interactionTracker.MaxScale);
+        var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
+        _interactionTracker.TryUpdatePositionAndScale(newPosition, newScale);
+    }
+
+    private Vector3D CalculateZoomPosition(Vector3D oldPosition, double oldScale, double newScale)
+    {
+        if (MathUtilities.IsZero(oldScale) || CompositionMathHelpers.IsCloseReal(oldScale, newScale))
+        {
+            return oldPosition;
+        }
+
+        var viewportCenter = new Vector(Viewport.Width * 0.5, Viewport.Height * 0.5);
+        var centerContentX = (oldPosition.X + viewportCenter.X) / oldScale;
+        var centerContentY = (oldPosition.Y + viewportCenter.Y) / oldScale;
+
+        var newX = centerContentX * newScale - viewportCenter.X;
+        var newY = centerContentY * newScale - viewportCenter.Y;
+
+        return new Vector3D(newX, newY, oldPosition.Z);
+    }
+
 
     //public ScrollPropertiesSource GetScrollPropertiesSource() => _scrollPropertiesSource ?? CreateScrollPropertiesSource();
 

@@ -28,4 +28,16 @@ public partial class ScrollView : ScrollViewer
     /// </summary>
     [GeneratedStyledProperty]
     public partial bool IsZoomEnabled { get; set; }
+
+    public void ZoomTo(double zoomFactor)
+    {
+        var presenter = Presenter as ScrollPresenter;
+        presenter?.ZoomTo(zoomFactor);
+    }
+
+    public void ZoomBy(double zoomFactorDelta)
+    {
+        var presenter = Presenter as ScrollPresenter;
+        presenter?.ZoomBy(zoomFactorDelta);
+    }
 }
