@@ -22,18 +22,35 @@
             Margin="24"
             HorizontalAlignment="Center"
             VerticalAlignment="Bottom"
-            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-            CornerRadius="4">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-                <TextBlock FontSize="16" Text="{Binding #ScrollView.ZoomFactor, Mode=OneWay, StringFormat=Zoom: {0:F1}x}" />
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+            ClipToBounds="True"
+            CornerRadius="128">
+            <Border.Styles>
+                <Style Selector="Button">
+                    <Setter Property="Background" Value="Transparent" />
+                </Style>
+            </Border.Styles>
+            <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button
                     x:Name="ZoomInButton"
+                    Padding="12,4,8,4"
                     Click="ZoomInButton_Click"
-                    Content="+" />
+                    Content="+"
+                    CornerRadius="0"
+                    FontSize="20" />
+                <TextBlock
+                    Width="56"
+                    TextAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="16"
+                    Text="{Binding #ScrollView.ZoomFactor, Mode=OneWay, StringFormat={}{0:P1}}" />
                 <Button
                     x:Name="ZoomOutButton"
+                    Padding="8,4,12,4"
                     Click="ZoomOutButton_Click"
-                    Content="-" />
+                    Content="-"
+                    CornerRadius="0"
+                    FontSize="20" />
             </StackPanel>
         </Border>
     </Panel>
