@@ -18,6 +18,8 @@
         <TabItem Header="List">
             <pages:ListPage />
         </TabItem>
-        <TabItem Header="Test" />
+        <TabItem Header="Interaction">
+            <pages:InteractionTrackerPage />
+        </TabItem>
     </TabControl>
 </UserControl>

@@ -1,0 +1,39 @@
+<UserControl
+    x:Class="SmoothScroll.Avalonia.Sample.Views.Pages.InteractionTrackerPage"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <Grid>
+        <Border
+            x:Name="SourceBorder"
+            Width="100"
+            Height="100"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Background="Red"
+            ZIndex="1" />
+        <Canvas
+            x:Name="interactionCanvas"
+            Width="800"
+            Height="700"
+            Background="#2416D8FF">
+
+            <Border
+                x:Name="border2"
+                Background="Blue"
+                ZIndex="2">
+                <TextBlock Margin="8,4" Text="Hello InteractionTracker!" />
+            </Border>
+            <Border
+                x:Name="border3"
+                Background="Green"
+                ZIndex="2">
+                <TextBlock Margin="8,4" Text="Reversed" />
+            </Border>
+        </Canvas>
+    </Grid>
+</UserControl>
