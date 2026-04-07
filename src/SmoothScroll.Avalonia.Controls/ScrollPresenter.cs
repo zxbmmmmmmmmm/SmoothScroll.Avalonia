@@ -1321,10 +1321,18 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _interactionSource.ScaleSourceMode = IsZoomEnabled
             ? InteractionSourceMode.EnabledWithInertia
             : InteractionSourceMode.Disabled;
-        //source.CanVerticallyScroll = CanVerticallyScroll;
-        //source.CanHorizontallyScroll = CanHorizontallyScroll;
-        //source.IsScrollInertiaEnabled = ScrollViewer.GetIsScrollInertiaEnabled(this);
-        //source.ScrollFeatures = GetScrollFeatures(this);
+        _interactionSource.PositionXSourceMode = CanHorizontallyScroll
+            ? InteractionSourceMode.EnabledWithInertia
+            : InteractionSourceMode.Disabled;
+        _interactionSource.PositionYSourceMode = CanVerticallyScroll
+            ? InteractionSourceMode.EnabledWithInertia
+            : InteractionSourceMode.Disabled;
+
+        var chainingMode = IsScrollChainingEnabled
+            ? InteractionChainingMode.Auto
+            : InteractionChainingMode.Never;
+        _interactionSource.PositionXChainingMode = chainingMode;
+        _interactionSource.PositionYChainingMode = chainingMode;
     }
 
     public void ZoomBy(double zoomFactorDelta)

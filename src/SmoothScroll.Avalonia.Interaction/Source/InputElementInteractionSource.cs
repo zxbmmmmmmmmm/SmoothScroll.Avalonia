@@ -27,6 +27,26 @@ public class InputElementInteractionSource : IDisposable
     /// </summary>
     public InteractionSourceMode PositionYSourceMode { get; set; } = InteractionSourceMode.EnabledWithInertia;
 
+    /// <summary>The PositionXChainingMode property defines the chaining behavior for an InteractionSource in the X direction. There are three InteractionChainingMode types:
+    /// 
+    /// - Auto
+    /// - Always
+    /// - Never
+    /// 
+    /// When chaining in the X direction is enabled, input will flow to the nearest ancestor's VisualInteractionSource whenever the interaction (such as panning) would otherwise take InteractionTracker ’s position past its minimum or maximum X position.</summary>
+    /// <returns>Chaining mode for the X-axis.</returns>
+    public InteractionChainingMode PositionXChainingMode { get; set; } = InteractionChainingMode.Auto;
+
+    /// <summary>The PositionYChainingMode property defines the chaining behavior for an InteractionSource in the Y direction. There are three types of InteractionChainingMode s:
+    /// 
+    /// - Auto
+    /// - Always
+    /// - Never
+    /// 
+    /// When chaining in the Y direction is enabled, input will flow to the nearest ancestor’s VisualInteractionSource whenever the interaction (such as panning) would otherwise take InteractionTracker ’s position past its minimum or maximum Y position.</summary>
+    /// <returns>Chaining mode for the Y-axis.</returns>
+    public InteractionChainingMode PositionYChainingMode { get; set; } = InteractionChainingMode.Auto;
+
     private readonly InteractionTracker _tracker; // TODO: Support multiple trackers
     private readonly InputElement _inputElement;
     private readonly double _manipulationStartDistance;
@@ -77,11 +97,17 @@ public class InputElementInteractionSource : IDisposable
             {
                 if (PositionXSourceMode is not InteractionSourceMode.Disabled)
                 {
+                    if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode))
+                        return;
+
                     _tracker.ReceivePointerWheel((int)e.Delta.Y, true);
                     e.Handled = true;
                 }
                 return;
             }
+
+            if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode))
+                return;
 
             _tracker.ReceivePointerWheel((int)e.Delta.Y, false);
             e.Handled = true;
@@ -92,6 +118,9 @@ public class InputElementInteractionSource : IDisposable
             {
                 return;
             }
+
+            if (IsAtBoundaryForChaining(e.Delta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode))
+                return;
 
             _tracker.ReceivePointerWheel((int)e.Delta.X, true);
             e.Handled = true;
@@ -106,6 +135,11 @@ public class InputElementInteractionSource : IDisposable
         }
 
         var position = e.GetPosition(_inputElement);
+
+        if (_firstContact is not null && !_isInteracting && _firstContact.Captured != _inputElement)
+        {
+            ResetContacts();
+        }
 
         if (_firstContact is not null)
         {
@@ -207,6 +241,12 @@ public class InputElementInteractionSource : IDisposable
 
             if (delta != default)
             {
+                if (ShouldChainDuringInteraction(delta) && ScaleSourceMode is not InteractionSourceMode.EnabledWithInertia)
+                {
+                    _firstContact?.Capture(null);
+                    return;
+                }
+
                 _tracker.ReceiveManipulationDelta(delta);
                 _velocityTracker?.AddPosition(TimeSpan.FromMilliseconds(e.Timestamp), position - _pressedPosition);
                 _firstPosition = position;
@@ -331,13 +371,19 @@ public class InputElementInteractionSource : IDisposable
             return false;
         }
 
-        if (pointerType is not PointerType.Touch and not PointerType.Pen)
+        if (pointerType is not PointerType.Touch and not PointerType.Pen || ScaleSourceMode is not InteractionSourceMode.Disabled)
         {
             return true;
         }
 
         var xDistance = PositionXSourceMode is InteractionSourceMode.Disabled ? 0 : Math.Abs(delta.X);
         var yDistance = PositionYSourceMode is InteractionSourceMode.Disabled ? 0 : Math.Abs(delta.Y);
+
+        if (xDistance > 0 && IsAtBoundaryForChaining(delta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode))
+            xDistance = 0;
+        if (yDistance > 0 && IsAtBoundaryForChaining(delta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode))
+            yDistance = 0;
+
         return xDistance > _manipulationStartDistance || yDistance > _manipulationStartDistance;
     }
 
@@ -367,6 +413,43 @@ public class InputElementInteractionSource : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Checks whether the tracker is at a boundary on the given axis and chaining should propagate
+    /// the input to the parent. A positive <paramref name="userDelta"/> means the tracker position
+    /// would decrease (toward <paramref name="min"/>); negative means it would increase (toward <paramref name="max"/>).
+    /// </summary>
+    private static bool IsAtBoundaryForChaining(double userDelta, double position, double min, double max, InteractionChainingMode chainingMode)
+    {
+        if (chainingMode is InteractionChainingMode.Never)
+            return false;
+
+        const double tolerance = 0.5;
+
+        if (userDelta > 0 && position <= min + tolerance)
+            return true;
+        if (userDelta < 0 && position >= max - tolerance)
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// During an active interaction, determines whether all enabled axes are at boundary
+    /// with chaining enabled, meaning the interaction should be handed off to the parent.
+    /// </summary>
+    private bool ShouldChainDuringInteraction(Point fingerDelta)
+    {
+        var xEnabled = PositionXSourceMode is not InteractionSourceMode.Disabled;
+        var yEnabled = PositionYSourceMode is not InteractionSourceMode.Disabled;
+
+        var xAtBoundary = !xEnabled || fingerDelta.X == 0 ||
+            IsAtBoundaryForChaining(fingerDelta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode);
+        var yAtBoundary = !yEnabled || fingerDelta.Y == 0 ||
+            IsAtBoundaryForChaining(fingerDelta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode);
+
+        return xAtBoundary && yAtBoundary;
+    }
+
     private void CapturePointer(IPointer? pointer)
     {
         pointer?.Capture(_inputElement);
@@ -380,22 +463,4 @@ public class InputElementInteractionSource : IDisposable
         _inputElement.PointerCaptureLost -= OnPointerCaptureLost;
         _inputElement.PointerWheelChanged -= OnPointerWheelChanged;
     }
-}
-
-public enum InteractionSourceMode
-{
-    /// <summary>
-    /// Interaction is disabled.
-    /// </summary>
-    Disabled = 0,
-
-    /// <summary>
-    /// Interaction is enabled with inertia.
-    /// </summary>
-    EnabledWithInertia = 1,
-
-    /// <summary>
-    /// Interaction is enabled without inertia.
-    /// </summary>
-    EnabledWithoutInertia = 2,
 }
