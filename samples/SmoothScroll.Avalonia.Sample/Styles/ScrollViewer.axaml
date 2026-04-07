@@ -43,12 +43,14 @@
                         Name="PART_HorizontalScrollBar"
                         Grid.Row="1"
                         VerticalAlignment="Bottom"
-                        Orientation="Horizontal" />
+                        Orientation="Horizontal"
+                        ZIndex="1" />
                     <ScrollBar
                         Name="PART_VerticalScrollBar"
                         Grid.Column="1"
                         HorizontalAlignment="Right"
-                        Orientation="Vertical" />
+                        Orientation="Vertical"
+                        ZIndex="1" />
                     <Panel
                         x:Name="PART_ScrollBarsSeparator"
                         Background="{DynamicResource ScrollViewerScrollBarsSeparatorBackground}"
@@ -95,11 +97,13 @@
                     <ScrollBar
                         Name="PART_HorizontalScrollBar"
                         Grid.Row="1"
-                        Orientation="Horizontal" />
+                        Orientation="Horizontal"
+                        ZIndex="1" />
                     <ScrollBar
                         Name="PART_VerticalScrollBar"
                         Grid.Column="1"
-                        Orientation="Vertical" />
+                        Orientation="Vertical"
+                        ZIndex="1" />
                     <Panel
                         x:Name="PART_ScrollBarsSeparator"
                         Grid.Row="1"
