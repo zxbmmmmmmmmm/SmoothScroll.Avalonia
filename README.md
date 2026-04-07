@@ -82,7 +82,7 @@ You can replace `ScrollContentPresenter` with `ScrollPresenter` to enable smooth
 A standalone control that provides smooth scroll, with panning and zooming support.
 
 First, add a default style for `ScrollView` to your application resources:
-```
+```xaml
 <ControlTheme x:Key="{x:Type controls:ScrollView}" TargetType="controls:ScrollView">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Template">
