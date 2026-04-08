@@ -18,6 +18,16 @@
     </PackageReference>
     <PackageReference Include="PropertyGenerator.Avalonia" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <PackageId>SmoothScroll.Avalonia</PackageId>
+    <Description>Scrolling, panning and zooming smoothly in Avalonia</Description>
+    <PackageTags>Avalonia;Smooth;Scroll;ScrollView;ScrollViewer;Pan;Zoom;Control;Xaml"</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/zxbmmmmmmmmm/SmoothScroll.Avalonia</RepositoryUrl>
+    <PackageReadmeFile>..\..\README.md</PackageReadmeFile>
+  </PropertyGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\SmoothScroll.Avalonia.Interaction\SmoothScroll.Avalonia.Interaction.csproj" />
   </ItemGroup>
