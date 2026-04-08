@@ -21,7 +21,6 @@
             Width="800"
             Height="700"
             Background="#2416D8FF">
-
             <Border
                 x:Name="border2"
                 Background="Blue"

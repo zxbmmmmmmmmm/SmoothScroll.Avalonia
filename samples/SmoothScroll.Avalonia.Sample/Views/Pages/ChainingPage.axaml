@@ -212,14 +212,10 @@
                                     FontWeight="Bold"
                                     Text="Child 6" />
                             </Border>
-
                         </StackPanel>
                     </ScrollViewer>
                 </Border>
             </Grid>
         </StackPanel>
-
     </ScrollViewer>
-
-
 </UserControl>
