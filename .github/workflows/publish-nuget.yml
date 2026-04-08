@@ -4,8 +4,8 @@ on:
     workflow_dispatch:
         inputs:
             git_tag:
-                description: Git tag to build and publish, for example v1.2.3 or 1.2.3
-                required: true
+                description: Optional git tag to build and publish. Leave empty to use the latest version tag.
+                required: false
                 type: string
 
 permissions:
@@ -21,28 +21,45 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - name: Checkout selected tag
+            - name: Checkout repository
               uses: actions/checkout@v4
               with:
-                  ref: ${{ inputs.git_tag }}
                   fetch-depth: 0
+                  fetch-tags: true
 
-            - name: Validate tag and derive package version
+            - name: Resolve tag and derive package version
               shell: bash
               run: |
                   set -euo pipefail
 
-                  git rev-parse --verify "refs/tags/${{ inputs.git_tag }}" >/dev/null 2>&1
+                  resolved_tag="${{ inputs.git_tag }}"
 
-                  version="${{ inputs.git_tag }}"
-                  version="${version#v}"
+                  if [[ -z "$resolved_tag" ]]; then
+                    resolved_tag="$(git tag --sort=-v:refname | head -n 1)"
+                  fi
 
-                  if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
-                    echo "Tag '${{ inputs.git_tag }}' cannot be converted to a valid NuGet version."
+                  if [[ -z "$resolved_tag" ]]; then
+                    echo "No git tags were found. Provide a tag manually or create a version tag first."
                     exit 1
                   fi
 
+                  git rev-parse --verify "refs/tags/$resolved_tag" >/dev/null 2>&1
+
+                  git checkout --force "$resolved_tag"
+
+                  version="$resolved_tag"
+                  version="${version#v}"
+
+                  if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+                    echo "Tag '$resolved_tag' cannot be converted to a valid NuGet version."
+                    exit 1
+                  fi
+
+                  echo "RESOLVED_TAG=$resolved_tag" >> "$GITHUB_ENV"
                   echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
+
+            - name: Show resolved tag
+              run: echo "Publishing from tag ${{ env.RESOLVED_TAG }} with package version ${{ env.PACKAGE_VERSION }}"
 
             - name: Setup .NET
               uses: actions/setup-dotnet@v4
