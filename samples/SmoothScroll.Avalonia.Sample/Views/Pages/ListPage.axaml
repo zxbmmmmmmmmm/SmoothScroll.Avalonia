@@ -2,6 +2,7 @@
     x:Class="SmoothScroll.Avalonia.Sample.Views.Pages.ListPage"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:SmoothScroll.Avalonia.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewModels="clr-namespace:SmoothScroll.Avalonia.Sample.ViewModels"
@@ -12,11 +13,14 @@
     <Design.DataContext>
         <viewModels:ListViewModel />
     </Design.DataContext>
-    <ListBox ItemsSource="{Binding Items}">
-        <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="x:Int32">
-                <TextBlock Text="{CompiledBinding}" />
-            </DataTemplate>
-        </ListBox.ItemTemplate>
-    </ListBox>
+    <controls:ScrollView>
+        <ItemsControl ItemsSource="{Binding Items}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:Int32">
+                    <ToggleButton Margin="8" HorizontalAlignment="Stretch" Content="{CompiledBinding}" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </controls:ScrollView>
+
 </UserControl>
