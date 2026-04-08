@@ -114,7 +114,7 @@ internal sealed class InteractionTrackerInteractingState : InteractionTrackerSta
             isFromPointerWheel: false));
     }
 
-    internal override void ReceivePointerWheel(int delta, bool isHorizontal)
+    internal override void ReceivePointerWheel(double delta, bool isHorizontal)
     {
     }
 

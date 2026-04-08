@@ -6,6 +6,8 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
 {
+    private const double MaxPointerWheelVelocity = 8000.0;
+
     private readonly IInteractionTrackerInertiaHandler _handler;
     private readonly int _requestId;
 
@@ -129,7 +131,7 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
     {
     }
 
-    internal override void ReceivePointerWheel(int delta, bool isHorizontal)
+    internal override void ReceivePointerWheel(double delta, bool isHorizontal)
     {
         var newDelta = isHorizontal ? new Vector3D(delta, 0, 0) : new Vector3D(0, delta, 0);
         var totalDelta = (_handler.FinalModifiedPosition - _interactionTracker.Position) + newDelta;
@@ -147,6 +149,11 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
         else
         {
             velocity = targetVelocity;
+        }
+
+        if (velocity.Length > MaxPointerWheelVelocity)
+        {
+            velocity = Vector3D.Multiply(velocity, MaxPointerWheelVelocity / velocity.Length);
         }
 
         _interactionTracker.ChangeState(new InteractionTrackerInertiaState(

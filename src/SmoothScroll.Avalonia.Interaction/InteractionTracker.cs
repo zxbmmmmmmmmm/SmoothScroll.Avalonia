@@ -130,7 +130,7 @@ public partial class InteractionTracker : CompositionObject
         _state.ReceiveScaleDelta(origin, delta);
     }
 
-    internal void ReceivePointerWheel(int mouseWheelTicks, bool isHorizontal)
+    internal void ReceivePointerWheel(double mouseWheelTicks, bool isHorizontal)
     {
         // On WinUI, this depends on mouse setting "how many lines to scroll each time"
         // The default Windows setting is 3 lines, and each line is 16px.

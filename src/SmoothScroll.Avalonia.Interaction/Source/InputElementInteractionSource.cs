@@ -100,7 +100,7 @@ public class InputElementInteractionSource : IDisposable
                     if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode))
                         return;
 
-                    _tracker.ReceivePointerWheel((int)e.Delta.Y, true);
+                    _tracker.ReceivePointerWheel(e.Delta.Y, true);
                     e.Handled = true;
                 }
                 return;
@@ -109,7 +109,7 @@ public class InputElementInteractionSource : IDisposable
             if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode))
                 return;
 
-            _tracker.ReceivePointerWheel((int)e.Delta.Y, false);
+            _tracker.ReceivePointerWheel(e.Delta.Y, false);
             e.Handled = true;
         }
         else
@@ -122,7 +122,7 @@ public class InputElementInteractionSource : IDisposable
             if (IsAtBoundaryForChaining(e.Delta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode))
                 return;
 
-            _tracker.ReceivePointerWheel((int)e.Delta.X, true);
+            _tracker.ReceivePointerWheel(e.Delta.X, true);
             e.Handled = true;
         }
     }

@@ -60,7 +60,7 @@ internal sealed class InteractionTrackerIdleState : InteractionTrackerState
     {
     }
 
-    internal override void ReceivePointerWheel(int delta, bool isHorizontal)
+    internal override void ReceivePointerWheel(double delta, bool isHorizontal)
     {
         // Constant velocity for 250ms
         var velocityValue = delta / 0.25f;

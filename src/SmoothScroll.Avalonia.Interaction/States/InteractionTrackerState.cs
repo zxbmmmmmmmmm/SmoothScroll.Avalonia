@@ -20,7 +20,7 @@ internal abstract class InteractionTrackerState
     internal abstract void ReceiveScaleDelta(Point origin, double delta);
     internal abstract void ReceiveManipulationDelta(Point translationDelta);
     internal abstract void ReceiveInertiaStarting(Point linearVelocity);
-    internal abstract void ReceivePointerWheel(int delta, bool isHorizontal);
+    internal abstract void ReceivePointerWheel(double delta, bool isHorizontal);
     internal abstract void ReceiveBoundsUpdate();
     internal abstract void TryUpdatePositionWithAdditionalVelocity(Vector3D velocityInPixelsPerSecond, int requestId);
     internal abstract void TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option, int requestId);
