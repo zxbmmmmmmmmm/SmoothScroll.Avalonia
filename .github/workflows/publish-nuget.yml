@@ -12,7 +12,8 @@ permissions:
     contents: read
 
 env:
-    PROJECT_PATH: src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj
+    CONTROLS_PROJECT_PATH: src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj
+    INTERACTION_PROJECT_PATH: src/SmoothScroll.Avalonia.Interaction/SmoothScroll.Avalonia.Interaction.csproj
     PACKAGE_OUTPUT_DIR: artifacts/nuget
     NUGET_SOURCE: https://api.nuget.org/v3/index.json
 
@@ -68,12 +69,23 @@ jobs:
                       8.0.x
                       10.0.x
 
-            - name: Restore
-              run: dotnet restore ${{ env.PROJECT_PATH }}
+            - name: Restore Controls
+              run: dotnet restore ${{ env.CONTROLS_PROJECT_PATH }}
 
-            - name: Pack
+            - name: Restore Interaction
+              run: dotnet restore ${{ env.INTERACTION_PROJECT_PATH }}
+
+            - name: Pack Controls
               run: >
-                  dotnet pack ${{ env.PROJECT_PATH }}
+                  dotnet pack ${{ env.CONTROLS_PROJECT_PATH }}
+                  --configuration Release
+                  --no-restore
+                  -p:PackageVersion=${{ env.PACKAGE_VERSION }}
+                  --output ${{ env.PACKAGE_OUTPUT_DIR }}
+
+            - name: Pack Interaction
+              run: >
+                  dotnet pack ${{ env.INTERACTION_PROJECT_PATH }}
                   --configuration Release
                   --no-restore
                   -p:PackageVersion=${{ env.PACKAGE_VERSION }}

@@ -7,6 +7,15 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>SmoothScroll.Avalonia.Interaction</PackageId>
+    <Description>InteractionTracker implementation for Avalonia</Description>
+    <PackageTags>Avalonia;InteractionTracker;Interaction;Scroll;Pan;Zoom;Input;Composition</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/zxbmmmmmmmmm/SmoothScroll.Avalonia</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
   
   <ItemGroup>
     <IgnoresAccessChecksTo Include="Avalonia.Base" />
@@ -17,6 +26,10 @@
     <PackageReference Include="IgnoresAccessChecksToGenerator">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
   </ItemGroup>
 
 </Project>
