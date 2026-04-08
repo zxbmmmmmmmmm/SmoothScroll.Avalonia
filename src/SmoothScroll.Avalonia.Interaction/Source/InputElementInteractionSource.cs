@@ -1,6 +1,9 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Platform;
+using Avalonia.VisualTree;
 using SmoothScroll.Avalonia.Interaction.Helpers;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -63,6 +66,8 @@ public class InputElementInteractionSource : IDisposable
 
     private Point _pressedPosition;
     private VelocityTracker? _velocityTracker;
+    private bool _hasHorizontalChainingTarget;
+    private bool _hasVerticalChainingTarget;
 
     public InputElementInteractionSource(InputElement inputElement, InteractionTracker tracker)
     {
@@ -74,8 +79,15 @@ public class InputElementInteractionSource : IDisposable
         _inputElement.PointerWheelChanged += OnPointerWheelChanged;
         _tracker = tracker;
 
+        if (_inputElement is Visual visual)
+        {
+            visual.AttachedToVisualTree += OnAttachedToVisualTree;
+            visual.DetachedFromVisualTree += OnDetachedFromVisualTree;
+        }
+
         var tapSize = AvaloniaLocator.Current?.GetService<IPlatformSettings>()?.GetTapSize(PointerType.Touch);
         _manipulationStartDistance = (tapSize?.Height ?? 10) / 2.0;
+        UpdateChainingTargets();
     }
 
     private bool IsTranslationEnabled =>
@@ -106,7 +118,7 @@ public class InputElementInteractionSource : IDisposable
             {
                 if (PositionXSourceMode is not InteractionSourceMode.Disabled)
                 {
-                    if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode))
+                    if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                         return;
 
                     _tracker.ReceivePointerWheel(e.Delta.Y, true);
@@ -115,7 +127,7 @@ public class InputElementInteractionSource : IDisposable
                 return;
             }
 
-            if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode))
+            if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode, _hasVerticalChainingTarget))
                 return;
 
             _tracker.ReceivePointerWheel(e.Delta.Y, false);
@@ -128,12 +140,39 @@ public class InputElementInteractionSource : IDisposable
                 return;
             }
 
-            if (IsAtBoundaryForChaining(e.Delta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode))
+            if (IsAtBoundaryForChaining(e.Delta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                 return;
 
             _tracker.ReceivePointerWheel(e.Delta.X, true);
             e.Handled = true;
         }
+    }
+
+    private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        UpdateChainingTargets();
+    }
+
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        _hasHorizontalChainingTarget = false;
+        _hasVerticalChainingTarget = false;
+    }
+
+    private void UpdateChainingTargets()
+    {
+        if (_inputElement is not Visual visual)
+        {
+            _hasHorizontalChainingTarget = false;
+            _hasVerticalChainingTarget = false;
+            return;
+        }
+
+        var currentScrollViewer = visual as ScrollViewer ?? visual.FindAncestorOfType<ScrollViewer>();
+        var ancestorScrollViewer = currentScrollViewer?.FindAncestorOfType<ScrollViewer>();
+
+        _hasHorizontalChainingTarget = ancestorScrollViewer is not null && ancestorScrollViewer.HorizontalScrollBarVisibility is not ScrollBarVisibility.Disabled;
+        _hasVerticalChainingTarget = ancestorScrollViewer is not null && ancestorScrollViewer.VerticalScrollBarVisibility is not ScrollBarVisibility.Disabled;
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -426,9 +465,9 @@ public class InputElementInteractionSource : IDisposable
         var xDistance = PositionXSourceMode is InteractionSourceMode.Disabled ? 0 : Math.Abs(delta.X);
         var yDistance = PositionYSourceMode is InteractionSourceMode.Disabled ? 0 : Math.Abs(delta.Y);
 
-        if (xDistance > 0 && IsAtBoundaryForChaining(delta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode))
+        if (xDistance > 0 && IsAtBoundaryForChaining(delta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
             xDistance = 0;
-        if (yDistance > 0 && IsAtBoundaryForChaining(delta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode))
+        if (yDistance > 0 && IsAtBoundaryForChaining(delta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode, _hasVerticalChainingTarget))
             yDistance = 0;
 
         return xDistance > _manipulationStartDistance || yDistance > _manipulationStartDistance;
@@ -465,9 +504,9 @@ public class InputElementInteractionSource : IDisposable
     /// the input to the parent. A positive <paramref name="userDelta"/> means the tracker position
     /// would decrease (toward <paramref name="min"/>); negative means it would increase (toward <paramref name="max"/>).
     /// </summary>
-    private static bool IsAtBoundaryForChaining(double userDelta, double position, double min, double max, InteractionChainingMode chainingMode)
+    private static bool IsAtBoundaryForChaining(double userDelta, double position, double min, double max, InteractionChainingMode chainingMode, bool hasChainingTarget)
     {
-        if (chainingMode is InteractionChainingMode.Never)
+        if (!CanChain(chainingMode, hasChainingTarget))
             return false;
 
         const double tolerance = 0.5;
@@ -480,6 +519,11 @@ public class InputElementInteractionSource : IDisposable
         return false;
     }
 
+    private static bool CanChain(InteractionChainingMode chainingMode, bool hasChainingTarget)
+    {
+        return hasChainingTarget && chainingMode is not InteractionChainingMode.Never;
+    }
+
     /// <summary>
     /// During an active interaction, determines whether all enabled axes are at boundary
     /// with chaining enabled, meaning the interaction should be handed off to the parent.
@@ -490,9 +534,9 @@ public class InputElementInteractionSource : IDisposable
         var yEnabled = PositionYSourceMode is not InteractionSourceMode.Disabled;
 
         var xAtBoundary = !xEnabled || fingerDelta.X == 0 ||
-            IsAtBoundaryForChaining(fingerDelta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode);
+            IsAtBoundaryForChaining(fingerDelta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget);
         var yAtBoundary = !yEnabled || fingerDelta.Y == 0 ||
-            IsAtBoundaryForChaining(fingerDelta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode);
+            IsAtBoundaryForChaining(fingerDelta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode, _hasVerticalChainingTarget);
 
         return xAtBoundary && yAtBoundary;
     }
@@ -504,6 +548,12 @@ public class InputElementInteractionSource : IDisposable
 
     public void Dispose()
     {
+        if (_inputElement is Visual visual)
+        {
+            visual.AttachedToVisualTree -= OnAttachedToVisualTree;
+            visual.DetachedFromVisualTree -= OnDetachedFromVisualTree;
+        }
+
         _inputElement.PointerPressed -= OnPointerPressed;
         _inputElement.PointerMoved -= OnPointerMoved;
         _inputElement.PointerReleased -= OnPointerReleased;
