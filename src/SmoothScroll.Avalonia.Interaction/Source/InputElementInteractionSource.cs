@@ -7,6 +7,9 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 public class InputElementInteractionSource : IDisposable
 {
+    private const double PointerWheelDeltaScale = 48;
+    private const double PrecisionTouchpadDeltaThreshold = 1;
+
     /// <summary>
     /// Defines how interactions are processed for an <see cref="InputElementInteractionSource"/> on the scale axis.
     /// This property must be enabled to allow the <see cref="InputElementInteractionSource"/> to send scale data to <see cref="InteractionTracker"/>.
@@ -81,6 +84,12 @@ public class InputElementInteractionSource : IDisposable
 
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
+        if (IsPrecisionTouchpadScroll(e))
+        {
+            HandlePrecisionTouchpadScroll(e);
+            return;
+        }
+
         if (ScaleSourceMode is not InteractionSourceMode.Disabled &&
             e.Delta.Y != 0)
         {
@@ -335,6 +344,44 @@ public class InputElementInteractionSource : IDisposable
         _previousDistance = 0;
         _previousCenter = default;
         _isInteracting = false;
+    }
+
+    private bool IsPrecisionTouchpadScroll(PointerWheelEventArgs e)
+    {
+        if (!IsTranslationEnabled)
+        {
+            return false;
+        }
+
+        return IsPrecisionTouchpadDelta(e.Delta.X) || IsPrecisionTouchpadDelta(e.Delta.Y);
+    }
+
+    private static bool IsPrecisionTouchpadDelta(double delta)
+    {
+        var absoluteDelta = Math.Abs(delta);
+        return absoluteDelta > 0 && absoluteDelta < PrecisionTouchpadDeltaThreshold;
+    }
+
+    private void HandlePrecisionTouchpadScroll(PointerWheelEventArgs e)
+    {
+        var translationDelta = new Point(
+            PositionXSourceMode is InteractionSourceMode.Disabled ? 0 : e.Delta.X * PointerWheelDeltaScale,
+            PositionYSourceMode is InteractionSourceMode.Disabled ? 0 : e.Delta.Y * PointerWheelDeltaScale);
+
+        if (translationDelta == default)
+        {
+            return;
+        }
+
+        if (ShouldChainDuringInteraction(translationDelta) && ScaleSourceMode is not InteractionSourceMode.EnabledWithInertia)
+        {
+            return;
+        }
+
+        _tracker.StartUserManipulation(e.GetPosition(_inputElement), e.Pointer);
+        _tracker.ReceiveManipulationDelta(translationDelta);
+        _tracker.CompleteUserManipulation();
+        e.Handled = true;
     }
 
     private void OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
