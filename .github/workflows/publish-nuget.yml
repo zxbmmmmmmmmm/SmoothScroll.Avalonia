@@ -1,0 +1,77 @@
+name: Publish NuGet Package
+
+on:
+    workflow_dispatch:
+        inputs:
+            git_tag:
+                description: Git tag to build and publish, for example v1.2.3 or 1.2.3
+                required: true
+                type: string
+
+permissions:
+    contents: read
+
+env:
+    PROJECT_PATH: src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj
+    PACKAGE_OUTPUT_DIR: artifacts/nuget
+    NUGET_SOURCE: https://api.nuget.org/v3/index.json
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout selected tag
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ inputs.git_tag }}
+                  fetch-depth: 0
+
+            - name: Validate tag and derive package version
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  git rev-parse --verify "refs/tags/${{ inputs.git_tag }}" >/dev/null 2>&1
+
+                  version="${{ inputs.git_tag }}"
+                  version="${version#v}"
+
+                  if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+                    echo "Tag '${{ inputs.git_tag }}' cannot be converted to a valid NuGet version."
+                    exit 1
+                  fi
+
+                  echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: |
+                      8.0.x
+                      10.0.x
+
+            - name: Restore
+              run: dotnet restore ${{ env.PROJECT_PATH }}
+
+            - name: Pack
+              run: >
+                  dotnet pack ${{ env.PROJECT_PATH }}
+                  --configuration Release
+                  --no-restore
+                  -p:PackageVersion=${{ env.PACKAGE_VERSION }}
+                  --output ${{ env.PACKAGE_OUTPUT_DIR }}
+
+            - name: Upload package artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: SmoothScroll.Avalonia.${{ env.PACKAGE_VERSION }}
+                  path: ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg
+                  if-no-files-found: error
+
+            - name: Push to NuGet
+              run: >
+                  dotnet nuget push "${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg"
+                  --source ${{ env.NUGET_SOURCE }}
+                  --api-key ${{ secrets.NUGET_API_KEY }}
+                  --skip-duplicate
