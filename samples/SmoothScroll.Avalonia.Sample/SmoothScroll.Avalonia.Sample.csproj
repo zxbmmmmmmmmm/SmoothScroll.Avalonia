@@ -26,10 +26,4 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SmoothScroll.Avalonia.Controls\SmoothScroll.Avalonia.Controls.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Styles\ScrollViewer.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-  </ItemGroup>
 </Project>
