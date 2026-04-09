@@ -12,7 +12,6 @@ namespace SmoothScroll.Avalonia.Interaction;
 public class InputElementInteractionSource : IDisposable
 {
     private const double PointerWheelDeltaScale = 48;
-    private const double PrecisionTouchpadDeltaThreshold = 1;
 
     /// <summary>
     /// Defines how interactions are processed for an <see cref="InputElementInteractionSource"/> on the scale axis.
@@ -403,9 +402,10 @@ public class InputElementInteractionSource : IDisposable
     private static bool IsPrecisionTouchpadDelta(double delta)
     {
         // There is no way to distinguish whether the mousewheel event is from precision touchpad or from mouse.
-        // However, deltas from original mouse wheel is often 1 or -1,
-        // so we can "distinguish" them by checking whether the delta's absolute value is close to 1.
-        return !MathUtilities.AreClose(Math.Abs(delta), PrecisionTouchpadDeltaThreshold) && !MathUtilities.AreClose(delta, 0);
+        // However, deltas from original mouse wheel is often integers,
+        // so we can "distinguish" them by checking whether the delta's absolute value is close to an integer.
+        var absoluteValue = Math.Abs(delta);
+        return !MathUtilities.AreClose(absoluteValue, (int)absoluteValue) ;
     }
 
     private void HandlePrecisionTouchpadScroll(PointerWheelEventArgs e)
