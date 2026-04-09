@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Xml.Linq;
@@ -38,7 +37,8 @@ public enum ScrollFeaturesEnum
 public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, IScrollAnchorProvider, IInteractionTrackerOwner
 {
     private const double EdgeDetectionTolerance = 0.1;
-    private const int ArrangeThrottleMs = 50;
+    private const int ArrangeTimerIntervalMs = 40;
+    private const int ArrangeTimerIdleTimeoutMs = 160;
 
     public static readonly AttachedProperty<ScrollFeaturesEnum> ScrollFeaturesProperty =
         AvaloniaProperty.RegisterAttached<ScrollPresenter, Control, ScrollFeaturesEnum>("ScrollFeatures", defaultValue: ScrollFeaturesEnum.None);
@@ -134,7 +134,9 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     private IScrollSnapPointsInfo? _scrollSnapPointsInfo;
     private bool _isSnapPointsUpdated;
     private InteractionTrackerInertiaStateEnteredArgs? _inertiaArgs;
-    private Stopwatch _throttleStopWatch = new();
+    private readonly DispatcherTimer _arrangeTimer;
+    private bool _hasPendingArrange;
+    private long _lastScrollActivityTick;
     /// <summary>
     /// Initializes static members of the <see cref="ScrollPresenter"/> class.
     /// </summary>
@@ -149,8 +151,12 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     /// </summary>
     public ScrollPresenter()
     {
+        _arrangeTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(ArrangeTimerIntervalMs),
+        };
+        _arrangeTimer.Tick += ArrangeTimerTick;
         AddHandler(RequestBringIntoViewEvent, BringIntoViewRequested);
-        _throttleStopWatch.Start();
     }
 
     public static ScrollFeaturesEnum GetScrollFeatures(Control element)
@@ -390,6 +396,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     {
         base.OnDetachedFromVisualTree(e);
         Child?.AttachedToVisualTree -= OnChildAttachedToVisualTree;
+        StopArrangeTimer();
         _interactionTracker?.Dispose();
         _interactionTracker = null;
         _interactionSource?.Dispose();
@@ -689,12 +696,39 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         return finalSize;
     }
 
-    private void RequestArrangeThrottled()
+    private void RequestArrangeOnScroll()
     {
-        if (_throttleStopWatch.ElapsedMilliseconds <= ArrangeThrottleMs) return;
-        InvalidateArrange();
-        _throttleStopWatch.Reset();
-        _throttleStopWatch.Start();
+        _hasPendingArrange = true;
+        _lastScrollActivityTick = Environment.TickCount64;
+
+        if (!_arrangeTimer.IsEnabled)
+        {
+            _arrangeTimer.Start();
+        }
+    }
+
+    private void ArrangeTimerTick(object? sender, EventArgs e)
+    {
+        if (_hasPendingArrange)
+        {
+            _hasPendingArrange = false;
+            InvalidateArrange();
+        }
+
+        if (Environment.TickCount64 - _lastScrollActivityTick >= ArrangeTimerIdleTimeoutMs)
+        {
+            StopArrangeTimer();
+        }
+    }
+
+    private void StopArrangeTimer()
+    {
+        _hasPendingArrange = false;
+
+        if (_arrangeTimer.IsEnabled)
+        {
+            _arrangeTimer.Stop();
+        }
     }
 
 
@@ -706,7 +740,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             {
                 if (_compositionUpdate)
                 {
-                    RequestArrangeThrottled();
+                    RequestArrangeOnScroll();
                 }
                 else
                 {
