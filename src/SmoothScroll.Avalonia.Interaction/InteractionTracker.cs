@@ -99,7 +99,7 @@ public partial class InteractionTracker : CompositionObject
         _state = newState;
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("INTERACTION_TRACKER_TRACE")]
     private static void WriteStateTransition(int count, string previousState, string newState)
     {
         Debug.WriteLine($"{count}:{previousState} -> {newState}");
