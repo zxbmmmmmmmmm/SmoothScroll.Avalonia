@@ -182,6 +182,11 @@ public class InputElementInteractionSource : IDisposable
             return;
         }
 
+        if(e.Pointer.Type == PointerType.Mouse && ScaleSourceMode is InteractionSourceMode.Disabled)
+        {
+            return;
+        }
+
         var position = e.GetPosition(_inputElement);
 
         if (_firstContact is not null && !_isInteracting && _firstContact.Captured != _inputElement)
