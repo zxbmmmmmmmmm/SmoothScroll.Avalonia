@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Platform;
+using Avalonia.Utilities;
 using Avalonia.VisualTree;
 using SmoothScroll.Avalonia.Interaction.Helpers;
 
@@ -101,7 +102,6 @@ public class InputElementInteractionSource : IDisposable
             HandlePrecisionTouchpadScroll(e);
             return;
         }
-
         if (ScaleSourceMode is not InteractionSourceMode.Disabled &&
             e.Delta.Y != 0)
         {
@@ -397,8 +397,10 @@ public class InputElementInteractionSource : IDisposable
 
     private static bool IsPrecisionTouchpadDelta(double delta)
     {
-        var absoluteDelta = Math.Abs(delta);
-        return absoluteDelta > 0 && absoluteDelta < PrecisionTouchpadDeltaThreshold;
+        // There is no way to distinguish whether the mousewheel event is from precision touchpad or from mouse.
+        // However, deltas from original mouse wheel is often 1 or -1,
+        // so we can "distinguish" them by checking whether the delta's absolute value is close to 1.
+        return !MathUtilities.AreClose(Math.Abs(delta), PrecisionTouchpadDeltaThreshold) && !MathUtilities.AreClose(delta, 0);
     }
 
     private void HandlePrecisionTouchpadScroll(PointerWheelEventArgs e)
