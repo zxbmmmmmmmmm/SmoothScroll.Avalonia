@@ -41,7 +41,7 @@ internal sealed class InteractionTrackerIdleState : InteractionTrackerState
             return;
         }
 
-        var scaleVelocity = Math.Log(delta) / 0.25;
+        var scaleVelocity = Math.Log(delta) / 0.2;
 
         _interactionTracker.ChangeState(new InteractionTrackerInertiaState(
             _interactionTracker,

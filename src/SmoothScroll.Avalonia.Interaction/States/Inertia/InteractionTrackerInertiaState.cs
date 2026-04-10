@@ -100,7 +100,7 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
             return;
         }
 
-        var inputVelocity = Math.Log(delta) / 0.25;
+        var inputVelocity = Math.Log(delta) / 0.2;
 
         var accumulatedVelocity = inputVelocity;
         if (_handler is InteractionTrackerScaleInertiaHandler pw)

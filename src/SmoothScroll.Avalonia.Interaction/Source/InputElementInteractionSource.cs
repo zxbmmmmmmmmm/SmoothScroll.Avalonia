@@ -11,7 +11,13 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 public class InputElementInteractionSource : IDisposable
 {
-    private const double PointerWheelDeltaScale = 48;
+    private const double TouchpadDeltaScale = 48;
+
+    // On WinUI, this depends on mouse setting "how many lines to scroll each time"
+    // The default Windows setting is 3 lines, and each line is 16px.
+    // Note: the value for each line may vary depending on scaling.
+    // For now, we just use 128.
+    private const double MouseWheelDeltaScale = 128;
 
     /// <summary>
     /// Defines how interactions are processed for an <see cref="InputElementInteractionSource"/> on the scale axis.
@@ -101,6 +107,7 @@ public class InputElementInteractionSource : IDisposable
             HandlePrecisionTouchpadScroll(e);
             return;
         }
+
         if (ScaleSourceMode is not InteractionSourceMode.Disabled &&
             e.Delta.Y != 0)
         {
@@ -110,26 +117,27 @@ public class InputElementInteractionSource : IDisposable
             e.Handled = true;
             return;
         }
-
-        if (e.Delta.Y != 0)
+        var deltaX = e.Delta.X * MouseWheelDeltaScale;
+        var deltaY = e.Delta.Y * MouseWheelDeltaScale;
+        if (deltaY != 0)
         {
             if (PositionYSourceMode is InteractionSourceMode.Disabled)
             {
                 if (PositionXSourceMode is not InteractionSourceMode.Disabled)
                 {
-                    if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
+                    if (IsAtBoundaryForChaining(deltaY, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                         return;
 
-                    _tracker.ReceivePointerWheel(e.Delta.Y, true);
+                    _tracker.ReceivePointerWheel(deltaY, true);
                     e.Handled = true;
                 }
                 return;
             }
 
-            if (IsAtBoundaryForChaining(e.Delta.Y, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode, _hasVerticalChainingTarget))
+            if (IsAtBoundaryForChaining(deltaY, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode, _hasVerticalChainingTarget))
                 return;
 
-            _tracker.ReceivePointerWheel(e.Delta.Y, false);
+            _tracker.ReceivePointerWheel(deltaY, false);
             e.Handled = true;
         }
         else
@@ -139,10 +147,10 @@ public class InputElementInteractionSource : IDisposable
                 return;
             }
 
-            if (IsAtBoundaryForChaining(e.Delta.X, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
+            if (IsAtBoundaryForChaining(deltaX, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                 return;
 
-            _tracker.ReceivePointerWheel(e.Delta.X, true);
+            _tracker.ReceivePointerWheel(deltaX, true);
             e.Handled = true;
         }
     }
@@ -411,8 +419,8 @@ public class InputElementInteractionSource : IDisposable
     private void HandlePrecisionTouchpadScroll(PointerWheelEventArgs e)
     {
         var translationDelta = new Point(
-            PositionXSourceMode is InteractionSourceMode.Disabled ? 0 : e.Delta.X * PointerWheelDeltaScale,
-            PositionYSourceMode is InteractionSourceMode.Disabled ? 0 : e.Delta.Y * PointerWheelDeltaScale);
+            PositionXSourceMode is InteractionSourceMode.Disabled ? 0 : e.Delta.X * TouchpadDeltaScale,
+            PositionYSourceMode is InteractionSourceMode.Disabled ? 0 : e.Delta.Y * TouchpadDeltaScale);
 
         if (translationDelta == default)
         {
