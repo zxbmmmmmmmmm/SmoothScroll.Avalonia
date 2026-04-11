@@ -5,7 +5,7 @@ using SmoothScroll.Avalonia.Sample.ViewModels;
 
 namespace SmoothScroll.Avalonia.Sample.Views.Pages;
 
-public partial class ListPage : UserControl
+public partial class ListPage : ContentPage
 {
     public ListPage()
     {

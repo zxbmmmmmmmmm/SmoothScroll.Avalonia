@@ -4,7 +4,7 @@ using Avalonia.Markup.Xaml;
 
 namespace SmoothScroll.Avalonia.Sample.Views.Pages;
 
-public partial class ChainingPage : UserControl
+public partial class ChainingPage : ContentPage
 {
     public ChainingPage()
     {

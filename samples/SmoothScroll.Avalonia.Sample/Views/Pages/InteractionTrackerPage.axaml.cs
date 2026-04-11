@@ -6,7 +6,7 @@ using SmoothScroll.Avalonia.Interaction;
 
 namespace SmoothScroll.Avalonia.Sample.Views.Pages;
 
-public partial class InteractionTrackerPage : UserControl
+public partial class InteractionTrackerPage : ContentPage
 {
     public InteractionTrackerPage()
     {
