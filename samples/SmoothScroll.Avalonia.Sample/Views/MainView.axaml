@@ -18,6 +18,9 @@
         <TabItem Header="List">
             <pages:ListPage />
         </TabItem>
+        <TabItem Header="TextBox">
+            <pages:TextboxPage />
+        </TabItem>
         <TabItem Header="Chaining">
             <pages:ChainingPage />
         </TabItem>
