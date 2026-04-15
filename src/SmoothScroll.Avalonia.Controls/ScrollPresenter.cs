@@ -431,7 +431,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         try
         {
             _compositionUpdate = true;
-            _interactionTracker.TryUpdatePositionAndScale(new Vector3D(Offset.X, Offset.Y, 0), ZoomFactor);
+            _interactionTracker.TryUpdateScale(ZoomFactor, new Vector3D(Offset.X, Offset.Y, 0));
         }
         finally
         {
@@ -795,7 +795,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             if (!_compositionUpdate && _interactionTracker != null)
             {
                 var scale = change.GetNewValue<double>();
-                _interactionTracker.TryUpdateScale(scale);
+                ZoomTo(scale);
             }
         }
         else if (change.Property == MinZoomFactorProperty)
@@ -1358,10 +1358,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     {
         if (_interactionTracker is null)
             return;
-        var compositionVisual = ElementComposition.GetElementVisual(Child)!;
-        var newScale = Math.Clamp(_interactionTracker.Scale + zoomFactorDelta, _interactionTracker.MinScale, _interactionTracker.MaxScale);
-        var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
-        _interactionTracker.TryUpdatePositionAndScale(newPosition, newScale);
+        ZoomTo(_interactionTracker.Scale + zoomFactorDelta);
     }
 
     public void ZoomTo(double zoomFactor)
@@ -1370,7 +1367,8 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             return;
         var newScale = Math.Clamp(zoomFactor, _interactionTracker.MinScale, _interactionTracker.MaxScale);
         var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
-        _interactionTracker.TryUpdatePositionAndScale(newPosition, newScale);
+        
+        _interactionTracker.TryUpdateScale(newScale, newPosition);
     }
 
     private CompositionVisual? GetCompositionVisual()

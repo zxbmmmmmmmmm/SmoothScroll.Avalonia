@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Rendering.Composition;
+using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -151,12 +153,95 @@ public partial class InteractionTracker : CompositionObject
     public int TryUpdatePositionBy(Vector3D amount, InteractionTrackerClampingOption option)
         => TryUpdatePosition(Server.Position + amount, option);
 
-    public void TryUpdateScale(double scale)
+    public void TryUpdateScale(double scale, Vector3D centerPoint)
     {
         SetScale(scale, 0);
     }
+    public async Task TryUpdatePositionWithAnimation(CompositionAnimation animation)
+    {
+        if(_state is InteractionTrackerInteractingState)
+        {
+            // Ignored
+            return;
+        }
+        if(animation is Vector3DKeyFrameAnimation keyFrameAnimation)
+        {
+            var duration = keyFrameAnimation.Duration;
+            this.StartAnimation(nameof(Position), keyFrameAnimation);
+            var state = new InteractionTrackerCustomAnimationState(this);
+            ChangeState(state);
+            await Task.Delay(duration);
+            if(_state == state)
+            {
+                ChangeState(new InteractionTrackerIdleState(this, 0));
+            }
 
-    public void TryUpdatePositionAndScale(Vector3D newPosition, double newScale) => SetPositionAndScale(newPosition, newScale, 0);
+        }
+        else if(animation is ExpressionAnimation expressionAnimation)
+        {
+            this.StartAnimation(nameof(Position), expressionAnimation);
+            ChangeState(new InteractionTrackerCustomAnimationState(this));
+        }
+        else
+        {
+            throw new ArgumentException("Only Vector3DKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+        }       
+    }
+ 
+    public async Task TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
+    {
+        if (_state is InteractionTrackerInteractingState)
+        {
+            // Ignored
+            return;
+        }
+        if (animation is DoubleKeyFrameAnimation keyFrameAnimation)
+        {
+            var duration = keyFrameAnimation.Duration;
+            var startPosition = Position;
+            var startScale = Scale;
+
+            this.StartAnimation(nameof(Scale), keyFrameAnimation);
+            StartCenterPointPositionAnimation(startPosition, startScale, centerPoint);
+
+            var state = new InteractionTrackerCustomAnimationState(this);
+            ChangeState(state);
+            await Task.Delay(duration);
+            if (_state == state)
+            {
+                ChangeState(new InteractionTrackerIdleState(this, 0));
+            }
+
+        }
+        else if (animation is ExpressionAnimation expressionAnimation)
+        {
+            var startPosition = Position;
+            var startScale = Scale;
+
+            this.StartAnimation(nameof(Scale), expressionAnimation);
+            StartCenterPointPositionAnimation(startPosition, startScale, centerPoint);
+
+            ChangeState(new InteractionTrackerCustomAnimationState(this));
+        }
+        else
+        {
+            throw new ArgumentException("Only DoubleKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+        }
+    }
+
+    private void StartCenterPointPositionAnimation(Vector3D startPosition, double startScale, Vector3D centerPoint)
+    {
+        var positionExpression = Compositor.CreateExpressionAnimation();
+        positionExpression.Expression =
+            "Vector3(Offset.X * this.Target.Scale - Center.X, Offset.Y * this.Target.Scale - Center.Y, 0)";
+        positionExpression.SetVector2Parameter("Offset",
+            new Vector2(
+                (float)((centerPoint.X + startPosition.X) / startScale),
+                (float)((centerPoint.Y + startPosition.Y) / startScale)));
+        positionExpression.SetVector2Parameter("Center",
+            new Vector2((float)centerPoint.X, (float)centerPoint.Y));
+        this.StartAnimation(nameof(Position), positionExpression);
+    }
 }
 
 public static class CompositorExtensions
