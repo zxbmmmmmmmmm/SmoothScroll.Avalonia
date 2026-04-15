@@ -28,7 +28,7 @@
                     BorderThickness="1">
                     <ScrollViewer
                         x:Name="VerticalSnapsScrollViewer"
-                        Height="350"
+                        Height="720"
                         HorizontalAlignment="Stretch"
                         HorizontalScrollBarVisibility="Disabled">
                         <StackPanel
@@ -118,6 +118,27 @@
                                 BorderBrush="Red"
                                 BorderThickness="1">
                                 <TextBlock FontWeight="Bold" Text="Child 12" />
+                            </Border>
+                            <Border
+                                Padding="5,30"
+                                HorizontalAlignment="Stretch"
+                                BorderBrush="Red"
+                                BorderThickness="1">
+                                <TextBlock FontWeight="Bold" Text="Child 13" />
+                            </Border>
+                            <Border
+                                Padding="5,30"
+                                HorizontalAlignment="Stretch"
+                                BorderBrush="Red"
+                                BorderThickness="1">
+                                <TextBlock FontWeight="Bold" Text="Child 14" />
+                            </Border>
+                            <Border
+                                Padding="5,30"
+                                HorizontalAlignment="Stretch"
+                                BorderBrush="Red"
+                                BorderThickness="1">
+                                <TextBlock FontWeight="Bold" Text="Child 15" />
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
