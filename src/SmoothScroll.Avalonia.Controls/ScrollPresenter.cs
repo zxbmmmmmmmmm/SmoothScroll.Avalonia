@@ -1365,10 +1365,18 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     {
         if (_interactionTracker is null)
             return;
+        var visual = GetCompositionVisual();
+        if (visual is null)
+            return;
         var newScale = Math.Clamp(zoomFactor, _interactionTracker.MinScale, _interactionTracker.MaxScale);
         var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
-        
-        _interactionTracker.TryUpdateScale(newScale, newPosition);
+
+        var compositor = visual.Compositor;
+        var animation = compositor.CreateDoubleKeyFrameAnimation();
+        animation.Duration = TimeSpan.FromMilliseconds(200);
+        animation.InsertKeyFrame(1.0f, newScale);
+
+        _interactionTracker.TryUpdateScaleWithAnimation(animation, newPosition);
     }
 
     private CompositionVisual? GetCompositionVisual()
