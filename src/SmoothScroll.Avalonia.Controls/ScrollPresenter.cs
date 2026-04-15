@@ -415,7 +415,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         InitializeInteractionTracker();
         // HACK: We must set ServerObject's scale manually as it's default value is 0.
         // Otherwise, the visual will be invisible.
-        var childVisual = ElementComposition.GetElementVisual(Child!);
+        var childVisual = GetCompositionVisual();
         var scale = new Vector3D(_interactionTracker!.Scale, _interactionTracker.Scale, _interactionTracker.Scale);
         childVisual!.Server.Scale = scale;
         EnsureScrollAnimation();
@@ -423,7 +423,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
     private void InitializeInteractionTracker()
     {
-        var compositionVisual = ElementComposition.GetElementVisual(this);
+        var compositionVisual = GetCompositionVisual();
         _interactionTracker = compositionVisual!.Compositor.CreateInteractionTracker(this);
         _interactionTracker.MinScale = MinZoomFactor;
         _interactionTracker.MaxScale = MaxZoomFactor;
@@ -771,19 +771,13 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
         else if (change.Property == ExtentProperty)
         {
-            if (_owner != null)
-            {
-                _owner.Extent = change.GetNewValue<Size>();
-            }
+            _owner?.Extent = change.GetNewValue<Size>();
             if (!_scaleChanged)
                 CoerceValue(OffsetProperty);
         }
         else if (change.Property == ViewportProperty)
         {
-            if (_owner != null)
-            {
-                _owner.Viewport = change.GetNewValue<Size>();
-            }
+            _owner?.Viewport = change.GetNewValue<Size>();
             CoerceValue(OffsetProperty);
         }
         else if (change.Property == PaddingProperty)
@@ -806,17 +800,11 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
         else if (change.Property == MinZoomFactorProperty)
         {
-            if (_interactionTracker != null)
-            {
-                _interactionTracker.MinScale = change.GetNewValue<double>();
-            }
+            _interactionTracker?.MinScale = change.GetNewValue<double>();
         }
         else if (change.Property == MaxZoomFactorProperty)
         {
-            if (_interactionTracker != null)
-            {
-                _interactionTracker.MaxScale = change.GetNewValue<double>();
-            }
+            _interactionTracker?.MaxScale = change.GetNewValue<double>();
         }
 
         base.OnPropertyChanged(change);
@@ -835,14 +823,11 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
     private void ChildChanged(AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.OldValue != null)
+        if (e.OldValue is not null)
         {
             SetCurrentValue(OffsetProperty, default);
             var compositionVisual = ElementComposition.GetElementVisual((e.OldValue as Control)!);
-            if (compositionVisual != null)
-            {
-                compositionVisual.ImplicitAnimations = null;
-            }
+            compositionVisual?.ImplicitAnimations = null;
         }
 
         EnsureScrollAnimation();
@@ -1373,6 +1358,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     {
         if (_interactionTracker is null)
             return;
+        var compositionVisual = ElementComposition.GetElementVisual(Child)!;
         var newScale = Math.Clamp(_interactionTracker.Scale + zoomFactorDelta, _interactionTracker.MinScale, _interactionTracker.MaxScale);
         var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
         _interactionTracker.TryUpdatePositionAndScale(newPosition, newScale);
@@ -1385,6 +1371,13 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         var newScale = Math.Clamp(zoomFactor, _interactionTracker.MinScale, _interactionTracker.MaxScale);
         var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
         _interactionTracker.TryUpdatePositionAndScale(newPosition, newScale);
+    }
+
+    private CompositionVisual? GetCompositionVisual()
+    {
+        if (Child is null || !Child.IsAttachedToVisualTree())
+            return null;
+        return ElementComposition.GetElementVisual(Child);
     }
 
     private Vector3D CalculateZoomPosition(Vector3D oldPosition, double oldScale, double newScale)
