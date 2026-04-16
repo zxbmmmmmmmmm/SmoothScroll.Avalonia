@@ -1369,14 +1369,13 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         if (visual is null)
             return;
         var newScale = Math.Clamp(zoomFactor, _interactionTracker.MinScale, _interactionTracker.MaxScale);
-        var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
 
         var compositor = visual.Compositor;
         var animation = compositor.CreateDoubleKeyFrameAnimation();
         animation.Duration = TimeSpan.FromMilliseconds(200);
         animation.InsertKeyFrame(1.0f, newScale);
-
-        _interactionTracker.TryUpdateScaleWithAnimation(animation, newPosition);
+        var viewportCenter = new Vector3D(Viewport.Width * 0.5, Viewport.Height * 0.5, 0);
+        _interactionTracker.TryUpdateScaleWithAnimation(animation, viewportCenter);
     }
 
     private CompositionVisual? GetCompositionVisual()
@@ -1384,23 +1383,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         if (Child is null || !Child.IsAttachedToVisualTree())
             return null;
         return ElementComposition.GetElementVisual(Child);
-    }
-
-    private Vector3D CalculateZoomPosition(Vector3D oldPosition, double oldScale, double newScale)
-    {
-        if (MathUtilities.IsZero(oldScale) || MathUtilities.AreClose(oldScale, newScale))
-        {
-            return oldPosition;
-        }
-
-        var viewportCenter = new Vector(Viewport.Width * 0.5, Viewport.Height * 0.5);
-        var centerContentX = (oldPosition.X + viewportCenter.X) / oldScale;
-        var centerContentY = (oldPosition.Y + viewportCenter.Y) / oldScale;
-
-        var newX = centerContentX * newScale - viewportCenter.X;
-        var newY = centerContentY * newScale - viewportCenter.Y;
-
-        return new Vector3D(newX, newY, oldPosition.Z);
     }
 
 

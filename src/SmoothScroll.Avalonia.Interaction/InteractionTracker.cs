@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Rendering.Composition;
 using Avalonia.Rendering.Composition.Animations;
@@ -167,7 +169,7 @@ public partial class InteractionTracker : CompositionObject
         if(animation is Vector3DKeyFrameAnimation keyFrameAnimation)
         {
             var duration = keyFrameAnimation.Duration;
-            this.StartAnimation(nameof(Position), keyFrameAnimation);
+            Server.StartPositionAnimation(keyFrameAnimation);
             var state = new InteractionTrackerCustomAnimationState(this);
             ChangeState(state);
             await Task.Delay(duration);
@@ -179,7 +181,7 @@ public partial class InteractionTracker : CompositionObject
         }
         else if(animation is ExpressionAnimation expressionAnimation)
         {
-            this.StartAnimation(nameof(Position), expressionAnimation);
+            Server.StartPositionAnimation(expressionAnimation);
             ChangeState(new InteractionTrackerCustomAnimationState(this));
         }
         else
@@ -198,11 +200,9 @@ public partial class InteractionTracker : CompositionObject
         if (animation is DoubleKeyFrameAnimation keyFrameAnimation)
         {
             var duration = keyFrameAnimation.Duration;
-            var startPosition = Position;
-            var startScale = Scale;
 
-            this.StartAnimation(nameof(Scale), keyFrameAnimation);
-            StartCenterPointPositionAnimation(startPosition, startScale, centerPoint);
+            var handler = new InteractionTrackerScaleAnimationHandler(this, animation, centerPoint, Server.Compositor);
+            handler.Initialize();
 
             var state = new InteractionTrackerCustomAnimationState(this);
             ChangeState(state);
@@ -211,15 +211,13 @@ public partial class InteractionTracker : CompositionObject
             {
                 ChangeState(new InteractionTrackerIdleState(this, 0));
             }
-
+            handler.Stop();
         }
         else if (animation is ExpressionAnimation expressionAnimation)
         {
-            var startPosition = Position;
-            var startScale = Scale;
 
-            this.StartAnimation(nameof(Scale), expressionAnimation);
-            StartCenterPointPositionAnimation(startPosition, startScale, centerPoint);
+            var handler = new InteractionTrackerScaleAnimationHandler(this, animation, centerPoint, Server.Compositor);
+            handler.Initialize();
 
             ChangeState(new InteractionTrackerCustomAnimationState(this));
         }
@@ -229,19 +227,6 @@ public partial class InteractionTracker : CompositionObject
         }
     }
 
-    private void StartCenterPointPositionAnimation(Vector3D startPosition, double startScale, Vector3D centerPoint)
-    {
-        var positionExpression = Compositor.CreateExpressionAnimation();
-        positionExpression.Expression =
-            "Vector3(Offset.X * this.Target.Scale - Center.X, Offset.Y * this.Target.Scale - Center.Y, 0)";
-        positionExpression.SetVector2Parameter("Offset",
-            new Vector2(
-                (float)((centerPoint.X + startPosition.X) / startScale),
-                (float)((centerPoint.Y + startPosition.Y) / startScale)));
-        positionExpression.SetVector2Parameter("Center",
-            new Vector2((float)centerPoint.X, (float)centerPoint.Y));
-        this.StartAnimation(nameof(Position), positionExpression);
-    }
 }
 
 public static class CompositorExtensions
