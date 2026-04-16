@@ -74,7 +74,7 @@ internal class InteractionTrackerScaleAnimationHandler : ServerObject, IServerCl
     public void OnTick()
     {
         var scale = _animation.Evaluate(Compositor.Clock.Elapsed, _interactionTracker.Scale).Double;
-        Debug.WriteLine(scale);
+
         var scaleRatio = scale / _initialScale;
         var currentPosition = _initialPosition;
         var deltaX = (_centerPoint.X - (-currentPosition.X)) * (1 - scaleRatio);
