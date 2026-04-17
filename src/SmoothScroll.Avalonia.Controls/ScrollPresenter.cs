@@ -339,7 +339,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         {
             var animation = compositor.CreateVector3DKeyFrameAnimation();
             animation.Duration = TimeSpan.FromMilliseconds(400);
-            animation.InsertKeyFrame(1.0f, new Vector3D(offset.X, offset.Y, 0));
+            animation.InsertKeyFrame(1.0f, new Vector3D(offset.X, offset.Y, 0), new CircularEaseOut());
             _interactionTracker?.TryUpdatePositionWithAnimation(animation);
         }
 
