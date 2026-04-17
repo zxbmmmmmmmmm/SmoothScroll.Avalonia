@@ -437,7 +437,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
             if (MathUtilities.AreClose(currentScale, ZoomFactor))
             {
-                _interactionTracker.TryUpdatePosition(targetPosition);
+                _interactionTracker.TryUpdatePosition(targetPosition, InteractionTrackerClampingOption.Disabled);
             }
             else
             {
