@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using System.Reflection.Metadata;
+using Avalonia;
 using Avalonia.Input;
 using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Utilities;
@@ -7,6 +8,7 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 internal abstract class InertiaState : InteractionTrackerState
 {
+    private const double MaxPointerWheelVelocity = 8000.0;
 
     protected IInteractionTrackerInertiaHandler Handler = null!;
 
@@ -100,7 +102,35 @@ internal abstract class InertiaState : InteractionTrackerState
 
     internal override void ReceivePointerWheel(double delta, bool isHorizontal)
     {
+        var newDelta = isHorizontal ? new Vector3D(delta, 0, 0) : new Vector3D(0, delta, 0);
+        var totalDelta = (Handler.FinalModifiedPosition - _interactionTracker.Position) + newDelta;
+        var targetVelocity = Vector3D.Divide(totalDelta, 0.25);
 
+        Vector3D velocity;
+
+        if (Handler is PointerWheelInertiaHandler pw)
+        {
+            var isOpposite = Vector3D.Dot(newDelta, pw.Velocity) < 0;
+
+            velocity = isOpposite
+                ? targetVelocity
+                : Vector3D.Add(pw.Velocity, targetVelocity);
+        }
+        else
+        {
+            velocity = targetVelocity;
+        }
+
+        if (velocity.Length > MaxPointerWheelVelocity)
+        {
+            velocity = Vector3D.Multiply(velocity, MaxPointerWheelVelocity / velocity.Length);
+        }
+
+        _interactionTracker.ChangeState(new PointerWheelInertiaState(
+            _interactionTracker,
+            velocity,
+            requestId: 0));
+        Handler.Stop();
     }
 
     internal override void TryUpdatePositionWithAdditionalVelocity(Vector3D velocityInPixelsPerSecond, int requestId)
