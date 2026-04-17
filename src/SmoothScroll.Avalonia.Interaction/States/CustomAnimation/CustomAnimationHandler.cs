@@ -61,6 +61,7 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
                     , requestId: 0));
             }, priority:
             DispatcherPriority.Render);
+            return;
         }
         var value = _animationInstance.Evaluate(elapsed, InteractionTracker.Position);
         Evaluate(value);

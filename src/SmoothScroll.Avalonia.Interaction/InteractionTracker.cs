@@ -87,17 +87,17 @@ public partial class InteractionTracker : CompositionObject
         SetScale(scale, 0);
     }
 
-    public async Task TryUpdatePositionWithAnimation(CompositionAnimation animation)
+    public void TryUpdatePositionWithAnimation(CompositionAnimation animation)
     {
-        if(animation is not DoubleKeyFrameAnimation and not ExpressionAnimation)
+        if(animation is not Vector3DKeyFrameAnimation and not ExpressionAnimation)
         {
-            throw new ArgumentException("Only DoubleKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+            throw new ArgumentException("Only Vector3DKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
         }
         animation.Target = nameof(Server.Position);
         _state.ReceiveAnimationStarting(animation);
     }
 
-    public async Task TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
+    public void TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
     {
         if (animation is not DoubleKeyFrameAnimation and not ExpressionAnimation)
         {
