@@ -11,9 +11,9 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
     private readonly AxisHelper _xHelper;
     private readonly AxisHelper _yHelper;
     private readonly AxisHelper _zHelper;
-    private readonly int _requestId;
 
     private Stopwatch? _stopwatch;
+    private readonly int _requestId = 0;
 
     // InteractionTracker works at 60 FPS, per documentation
     // https://learn.microsoft.com/en-us/windows/uwp/composition/interaction-tracker-manipulations#why-use-interactiontracker
@@ -32,7 +32,6 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
         _xHelper = new AxisHelper(this, translationVelocities, Axis.X);
         _yHelper = new AxisHelper(this, translationVelocities, Axis.Y);
         _zHelper = new AxisHelper(this, translationVelocities, Axis.Z);
-        _requestId = requestId;
     }
 
     public void Start()

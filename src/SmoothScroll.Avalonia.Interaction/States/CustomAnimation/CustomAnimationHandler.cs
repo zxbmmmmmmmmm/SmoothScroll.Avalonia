@@ -55,10 +55,10 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
         {
             Stop();
             Dispatcher.UIThread.Post(() => {
-                InteractionTracker.ChangeState(new InertiaState(
+                InteractionTracker.ChangeState(new ScaleInertiaState(
                     InteractionTracker,
-                    default, default, 0
-                    , requestId: 0, false));
+                    default, 0
+                    , requestId: 0));
             }, priority:
             DispatcherPriority.Render);
         }

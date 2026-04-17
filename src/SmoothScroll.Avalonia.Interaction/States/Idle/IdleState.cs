@@ -44,11 +44,9 @@ internal sealed class IdleState : InteractionTrackerState
 
         var scaleVelocity = Math.Log(delta) / 0.2;
 
-        _interactionTracker.ChangeState(new InertiaState(
+        _interactionTracker.ChangeState(new ScaleInertiaState(
             _interactionTracker,
-            default,
             requestId: 0,
-            isFromPointerWheel: true,
             scaleVelocity: scaleVelocity,
             scaleOrigin: origin));
     }
@@ -66,14 +64,14 @@ internal sealed class IdleState : InteractionTrackerState
         // Constant velocity for 250ms
         var velocityValue = delta / 0.25f;
         var velocity = isHorizontal ? new Vector3D(velocityValue, 0, 0) : new Vector3D(0, velocityValue, 0);
-        _interactionTracker.ChangeState(new InertiaState(_interactionTracker, velocity, default, 0, requestId: 0, isFromPointerWheel: true));
+        _interactionTracker.ChangeState(new PointerWheelInertiaState(_interactionTracker, velocity, requestId: 0));
     }
 
     internal override void TryUpdatePositionWithAdditionalVelocity(Vector3D velocityInPixelsPerSecond, int requestId)
     {
         // State changes to inertia and inertia modifiers are evaluated with requested velocity as initial velocity
         // TODO: inertia modifiers not yet implemented.
-        _interactionTracker.ChangeState(new InertiaState(_interactionTracker, velocityInPixelsPerSecond, default, 0, requestId, isFromPointerWheel: false));
+        _interactionTracker.ChangeState(new ActiveInputInertiaState(_interactionTracker, velocityInPixelsPerSecond, requestId));
     }
 
     internal override void TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option, int requestId)

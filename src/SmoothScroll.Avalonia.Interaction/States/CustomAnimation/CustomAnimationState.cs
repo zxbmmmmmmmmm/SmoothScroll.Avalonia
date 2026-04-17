@@ -55,11 +55,9 @@ internal sealed class CustomAnimationState : InteractionTrackerState
 
         var scaleVelocity = Math.Log(delta) / 0.2;
 
-        _interactionTracker.ChangeState(new InertiaState(
+        _interactionTracker.ChangeState(new ScaleInertiaState(
             _interactionTracker,
-            default,
             requestId: 0,
-            isFromPointerWheel: true,
             scaleVelocity: scaleVelocity,
             scaleOrigin: origin));
     }
@@ -87,13 +85,10 @@ internal sealed class CustomAnimationState : InteractionTrackerState
         _animationHandler.Stop();
         // State changes to inertia with inertia modifiers evaluated using requested velocity as initial velocity.
         // TODO: inertia modifiers not yet implemented.
-        _interactionTracker.ChangeState(new InertiaState(
+        _interactionTracker.ChangeState(new ActiveInputInertiaState(
             _interactionTracker,
             velocityInPixelsPerSecond,
-            default,
-            0,
-            requestId,
-            isFromPointerWheel: false));
+            requestId));
     }
 
     internal override void TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option, int requestId)

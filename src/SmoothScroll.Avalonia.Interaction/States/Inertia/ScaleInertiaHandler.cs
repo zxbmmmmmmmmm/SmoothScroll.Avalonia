@@ -109,10 +109,10 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
 
             Dispatcher.UIThread.Post(() =>
             {
-                _interactionTracker.ChangeState(new InertiaState(
+                _interactionTracker.ChangeState(new ActiveInputInertiaState(
                     _interactionTracker,
-                    default, default, 0
-                    , requestId: 0, false));
+                    default,
+                    requestId: 0));
             }, priority: DispatcherPriority.Render);
             Stop();
         }
