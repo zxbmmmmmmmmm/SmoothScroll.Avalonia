@@ -1,7 +1,11 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Rendering.Composition;
+using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -9,10 +13,22 @@ namespace SmoothScroll.Avalonia.Interaction;
 public partial class InteractionTracker : CompositionObject
 {
     private int _requestId = 0;
-    public IInteractionTrackerOwner? Owner { get; init; }
-
 
     private InteractionTrackerState _state;
+
+    private int _count = 0;
+
+    internal new ServerInteractionTracker Server { get; }
+
+    internal InteractionTracker(Compositor compositor, ServerInteractionTracker server) : base(compositor, server)
+    {
+        Server = server;
+        Server.Activate();
+        _state = new IdleState(this, 0, isInitialIdleState: true);
+    }
+
+
+    public IInteractionTrackerOwner? Owner { get; init; }
 
     public double MinScale { get; set; } = 1.0;
 
@@ -50,15 +66,51 @@ public partial class InteractionTracker : CompositionObject
 
     public double Scale => Server.Scale;
 
-    private int _count = 0;
+    public int TryUpdatePosition(Vector3D value)
+    => TryUpdatePosition(value, InteractionTrackerClampingOption.Auto);
 
-    internal new ServerInteractionTracker Server { get; }
+    public int TryUpdatePositionBy(Vector3D amount)
+        => TryUpdatePosition(Server.Position + amount);
 
-    internal InteractionTracker(Compositor compositor, ServerInteractionTracker server) : base(compositor, server)
+    public int TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option)
     {
-        Server = server;
-        Server.Activate();
-        _state = new InteractionTrackerIdleState(this, 0, isInitialIdleState: true);
+        var id = Interlocked.Increment(ref _requestId);
+        _state.TryUpdatePosition(value, option, id);
+        return id;
+    }
+
+    public int TryUpdatePositionBy(Vector3D amount, InteractionTrackerClampingOption option)
+        => TryUpdatePosition(Server.Position + amount, option);
+
+    public void TryUpdateScale(double scale, Vector3D centerPoint)
+    {
+        var currentScale = Server.Scale;
+        if (MathUtilities.AreClose(currentScale, scale))
+            return;
+        var id = Interlocked.Increment(ref _requestId);
+        var scaleFactor = scale / currentScale;
+        var adjustedPosition = centerPoint + ((Server.Position - centerPoint) * scaleFactor);
+        SetPositionAndScale(adjustedPosition,scale, id);
+    }
+
+    public void TryUpdatePositionWithAnimation(CompositionAnimation animation)
+    {
+        if(animation is not Vector3DKeyFrameAnimation and not ExpressionAnimation)
+        {
+            throw new ArgumentException("Only Vector3DKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+        }
+        animation.Target = nameof(Server.Position);
+        _state.ReceiveAnimationStarting(animation);
+    }
+
+    public void TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
+    {
+        if (animation is not DoubleKeyFrameAnimation and not ExpressionAnimation)
+        {
+            throw new ArgumentException("Only DoubleKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+        }
+        animation.Target = nameof(Server.Scale);
+        _state.ReceiveAnimationStarting(animation, centerPoint);
     }
 
     internal void SetPosition(Vector3D newPosition, int requestId)
@@ -99,11 +151,6 @@ public partial class InteractionTracker : CompositionObject
         _state = newState;
     }
 
-    [Conditional("INTERACTION_TRACKER_TRACE")]
-    private static void WriteStateTransition(int count, string previousState, string newState)
-    {
-        Debug.WriteLine($"{count}:{previousState} -> {newState}");
-    }
 
     internal void StartUserManipulation(Point position, IPointer pointer)
     {
@@ -135,28 +182,13 @@ public partial class InteractionTracker : CompositionObject
         _state.ReceivePointerWheel(-delta, isHorizontal);
     }
 
-    public int TryUpdatePosition(Vector3D value)
-        => TryUpdatePosition(value, InteractionTrackerClampingOption.Auto);
 
-    public int TryUpdatePositionBy(Vector3D amount)
-        => TryUpdatePosition(Server.Position + amount);
-
-    public int TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option)
+    [Conditional("INTERACTION_TRACKER_TRACE")]
+    private static void WriteStateTransition(int count, string previousState, string newState)
     {
-        var id = Interlocked.Increment(ref _requestId);
-        _state.TryUpdatePosition(value, option, id);
-        return id;
+        Debug.WriteLine($"{count}:{previousState} -> {newState}");
     }
 
-    public int TryUpdatePositionBy(Vector3D amount, InteractionTrackerClampingOption option)
-        => TryUpdatePosition(Server.Position + amount, option);
-
-    public void TryUpdateScale(double scale)
-    {
-        SetScale(scale, 0);
-    }
-
-    public void TryUpdatePositionAndScale(Vector3D newPosition, double newScale) => SetPositionAndScale(newPosition, newScale, 0);
 }
 
 public static class CompositorExtensions

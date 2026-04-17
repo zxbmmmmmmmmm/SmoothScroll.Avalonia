@@ -13,10 +13,10 @@ public partial class ZoomPage : ContentPage
     }
     private void ZoomInButton_Click(object? sender, RoutedEventArgs e)
     {
-        ScrollView.ZoomBy(0.1);
+        ScrollView.ZoomTo(ScrollView.ZoomFactor * 1.2);
     }
     private void ZoomOutButton_Click(object? sender, RoutedEventArgs e)
     {
-        ScrollView.ZoomBy(-0.1);
+        ScrollView.ZoomTo(ScrollView.ZoomFactor / 1.2);
     }
 }

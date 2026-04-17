@@ -13,12 +13,20 @@
     <Design.DataContext>
         <viewModels:ListViewModel />
     </Design.DataContext>
-    <ListBox SelectionMode="Multiple" ItemsSource="{Binding Items}">
-        <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="x:Int32">
-                <TextBlock Margin="8" Text="{CompiledBinding}" />
-            </DataTemplate>
-        </ListBox.ItemTemplate>
-    </ListBox>
+    <Grid RowDefinitions="Auto,*" RowSpacing="4">
+        <Button x:Name="BringIntoViewButton" Click="BringIntoViewButton_Click" Content="Bring Random Item Into View" />
+
+        <ListBox
+            x:Name="MyListBox"
+            Grid.Row="1"
+            ItemsSource="{Binding Items}"
+            SelectionMode="Multiple">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="x:Int32">
+                    <TextBlock Margin="8" Text="{CompiledBinding}" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
 
 </ContentPage>

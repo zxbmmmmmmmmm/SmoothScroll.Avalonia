@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Rendering.Composition.Server;
 
 namespace SmoothScroll.Avalonia.Interaction;
-internal class InteractionTrackerPointerWheelInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
+internal class PointerWheelInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
 {
     // InteractionTracker works at 60 FPS, per documentation
     // https://learn.microsoft.com/en-us/windows/uwp/composition/interaction-tracker-manipulations#why-use-interactiontracker
@@ -23,7 +23,7 @@ internal class InteractionTrackerPointerWheelInertiaHandler : ServerObject, ISer
     private Stopwatch? _stopwatch;
     private readonly InteractionTracker _interactionTracker;
 
-    public InteractionTrackerPointerWheelInertiaHandler(ServerCompositor serverCompositor, InteractionTracker interactionTracker, Vector3D translationVelocities)
+    public PointerWheelInertiaHandler(ServerCompositor serverCompositor, InteractionTracker interactionTracker, Vector3D translationVelocities)
         : base(serverCompositor)
     {
         _interactionTracker = interactionTracker;
@@ -80,7 +80,7 @@ internal class InteractionTrackerPointerWheelInertiaHandler : ServerObject, ISer
 
         if (hasStoppedByVelocity || hasReachedTarget || hasTimedOut)
         {
-            _interactionTracker.ChangeState(new InteractionTrackerIdleState(_interactionTracker, requestId: 0));
+            _interactionTracker.ChangeState(new IdleState(_interactionTracker, requestId: 0));
             Stop();
         }
     }

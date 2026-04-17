@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Xml.Linq;
 using Avalonia;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
@@ -431,13 +432,45 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         try
         {
             _compositionUpdate = true;
-            _interactionTracker.TryUpdatePositionAndScale(new Vector3D(Offset.X, Offset.Y, 0), ZoomFactor);
+            var targetPosition = new Vector3D(Offset.X, Offset.Y, 0);
+            var currentScale = _interactionTracker.Scale;
+
+            if (MathUtilities.AreClose(currentScale, ZoomFactor))
+            {
+                _interactionTracker.TryUpdatePosition(targetPosition, InteractionTrackerClampingOption.Disabled);
+            }
+            else
+            {
+                var currentPosition = _interactionTracker.Position;
+                var centerPoint = ConvertOffsetToCenterPoint(currentPosition, currentScale, targetPosition, ZoomFactor);
+                _interactionTracker.TryUpdateScale(ZoomFactor, centerPoint);
+            }
         }
         finally
         {
             _compositionUpdate = false;
         }
         UpdateInteractionOptions();
+    }
+
+    private static Vector3D ConvertOffsetToCenterPoint(
+        Vector3D currentPosition,
+        double currentScale,
+        Vector3D targetPosition,
+        double targetScale)
+    {
+        var scaleFactor = targetScale / currentScale;
+        var denominator = 1.0 - scaleFactor;
+
+        if (MathUtilities.IsZero(denominator))
+        {
+            return default;
+        }
+
+        var centerX = (targetPosition.X - (currentPosition.X * scaleFactor)) / denominator;
+        var centerY = (targetPosition.Y - (currentPosition.Y * scaleFactor)) / denominator;
+
+        return new Vector3D(centerX, centerY, 0);
     }
 
     /// <summary>
@@ -795,7 +828,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             if (!_compositionUpdate && _interactionTracker != null)
             {
                 var scale = change.GetNewValue<double>();
-                _interactionTracker.TryUpdateScale(scale);
+                ZoomTo(scale);
             }
         }
         else if (change.Property == MinZoomFactorProperty)
@@ -1358,19 +1391,24 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     {
         if (_interactionTracker is null)
             return;
-        var compositionVisual = ElementComposition.GetElementVisual(Child)!;
-        var newScale = Math.Clamp(_interactionTracker.Scale + zoomFactorDelta, _interactionTracker.MinScale, _interactionTracker.MaxScale);
-        var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
-        _interactionTracker.TryUpdatePositionAndScale(newPosition, newScale);
+        ZoomTo(_interactionTracker.Scale + zoomFactorDelta);
     }
 
     public void ZoomTo(double zoomFactor)
     {
         if (_interactionTracker is null)
             return;
+        var visual = GetCompositionVisual();
+        if (visual is null)
+            return;
         var newScale = Math.Clamp(zoomFactor, _interactionTracker.MinScale, _interactionTracker.MaxScale);
-        var newPosition = CalculateZoomPosition(_interactionTracker.Position, _interactionTracker.Scale, newScale);
-        _interactionTracker.TryUpdatePositionAndScale(newPosition, newScale);
+
+        var compositor = visual.Compositor;
+        var animation = compositor.CreateDoubleKeyFrameAnimation();
+        animation.Duration = TimeSpan.FromMilliseconds(300);
+        animation.InsertKeyFrame(1.0f, newScale, new CircularEaseOut());
+        var viewportCenter = new Vector3D(Viewport.Width * 0.5, Viewport.Height * 0.5, 0);
+        _interactionTracker.TryUpdateScaleWithAnimation(animation, viewportCenter);
     }
 
     private CompositionVisual? GetCompositionVisual()
@@ -1378,23 +1416,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         if (Child is null || !Child.IsAttachedToVisualTree())
             return null;
         return ElementComposition.GetElementVisual(Child);
-    }
-
-    private Vector3D CalculateZoomPosition(Vector3D oldPosition, double oldScale, double newScale)
-    {
-        if (MathUtilities.IsZero(oldScale) || MathUtilities.AreClose(oldScale, newScale))
-        {
-            return oldPosition;
-        }
-
-        var viewportCenter = new Vector(Viewport.Width * 0.5, Viewport.Height * 0.5);
-        var centerContentX = (oldPosition.X + viewportCenter.X) / oldScale;
-        var centerContentY = (oldPosition.Y + viewportCenter.Y) / oldScale;
-
-        var newX = centerContentX * newScale - viewportCenter.X;
-        var newY = centerContentY * newScale - viewportCenter.Y;
-
-        return new Vector3D(newX, newY, oldPosition.Z);
     }
 
 
