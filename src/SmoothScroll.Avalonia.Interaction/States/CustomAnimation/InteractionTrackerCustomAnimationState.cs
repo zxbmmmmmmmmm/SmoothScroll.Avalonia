@@ -1,5 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Input;
+using Avalonia.Rendering.Composition;
+using Avalonia.Rendering.Composition.Animations;
+using Avalonia.Styling;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
@@ -7,9 +10,26 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
 {
     internal override string Name => "CustomAnimationState";
 
-    public InteractionTrackerCustomAnimationState(InteractionTracker interactionTracker) : base(interactionTracker)
+    
+
+    public InteractionTrackerCustomAnimationState(InteractionTracker interactionTracker, CompositionAnimation animation) : base(interactionTracker)
     {
         EnterState(interactionTracker.Owner);
+
+        if (animation is Vector3DKeyFrameAnimation keyFrameAnimation)
+        {
+            
+
+        }
+        else if (animation is ExpressionAnimation expressionAnimation)
+        {
+            
+        }
+        else
+        {
+            throw new ArgumentException("Only Vector3DKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+        }
+
     }
 
     protected override void EnterState(IInteractionTrackerOwner? owner)

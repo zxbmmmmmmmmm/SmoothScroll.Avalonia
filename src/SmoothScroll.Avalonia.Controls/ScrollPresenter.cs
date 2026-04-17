@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Xml.Linq;
 using Avalonia;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
@@ -1372,10 +1373,10 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         var compositor = visual.Compositor;
         var animation = compositor.CreateDoubleKeyFrameAnimation();
-        animation.Duration = TimeSpan.FromMilliseconds(200);
-        animation.InsertKeyFrame(1.0f, newScale);
+        animation.Duration = TimeSpan.FromMilliseconds(300);
+        animation.InsertKeyFrame(1.0f, newScale, new CircularEaseOut());
         var viewportCenter = new Vector3D(Viewport.Width * 0.5, Viewport.Height * 0.5, 0);
-        _interactionTracker.TryUpdateScaleWithAnimation(animation, viewportCenter);
+        _ = _interactionTracker.TryUpdateScaleWithAnimation(animation, viewportCenter);
     }
 
     private CompositionVisual? GetCompositionVisual()

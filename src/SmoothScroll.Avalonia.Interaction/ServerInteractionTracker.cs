@@ -36,67 +36,6 @@ internal partial class ServerInteractionTracker
     }
 }
 
-internal class InteractionTrackerScaleAnimationHandler : ServerObject, IServerClockItem
-{
-    private readonly IAnimationInstance _animation;
-    private readonly InteractionTracker _interactionTracker;
-    private Vector3D _initialPosition;
-    private double _initialScale;
-    private readonly Vector3D _centerPoint;
-
-    public InteractionTrackerScaleAnimationHandler(
-        InteractionTracker interactionTracker,
-        CompositionAnimation animation,
-        Vector3D centerPoint,
-        ServerCompositor compositor) : base(compositor)
-    {
-        _interactionTracker = interactionTracker;
-        _animation = animation.CreateInstance(interactionTracker.Server, null);
-        _centerPoint = centerPoint;
-    }
-
-
-    public void Initialize()
-    {
-        _initialPosition = _interactionTracker.Position;
-        _initialScale = _interactionTracker.Scale;
-        _animation.Initialize(Compositor.Clock.Elapsed, _initialScale, ServerInteractionTracker.s_IdOfScaleProperty);
-        Compositor.Animations.AddToClock(this);
-        this.Activate();
-    }
-
-    public void Stop()
-    {
-        Compositor.Animations.RemoveFromClock(this);
-        this.Deactivate();
-    }
-
-    public void OnTick()
-    {
-        var scale = _animation.Evaluate(Compositor.Clock.Elapsed, _interactionTracker.Scale).Double;
-
-        var scaleRatio = scale / _initialScale;
-        var currentPosition = _initialPosition;
-        var deltaX = (_centerPoint.X - (-currentPosition.X)) * (1 - scaleRatio);
-        var deltaY = (_centerPoint.Y - (-currentPosition.Y)) * (1 - scaleRatio);
-
-        var scaledNewPosition = new Vector3D(
-            currentPosition.X - deltaX,
-            currentPosition.Y - deltaY,
-            currentPosition.Z);
-
-        var modifiedScale = Math.Clamp(scale, _interactionTracker.MinScale, _interactionTracker.MaxScale);
-
-
-        if (!MathUtilities.AreClose(modifiedScale, _interactionTracker.MinScale)
-            && !MathUtilities.AreClose(modifiedScale, _interactionTracker.MaxScale))
-        {
-            _interactionTracker.SetPositionAndScale(scaledNewPosition, modifiedScale, 0);
-        }
-
-    }
-}
-
 /// <summary>
 /// Generated code.
 /// </summary>

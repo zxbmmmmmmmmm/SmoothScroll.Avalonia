@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Input;
+using Avalonia.Rendering.Composition.Animations;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
@@ -90,5 +91,10 @@ internal sealed class InteractionTrackerIdleState : InteractionTrackerState
         var position = _interactionTracker.Position;
         var clampedPosition = Vector3D.Clamp(position, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
         _interactionTracker.SetPosition(clampedPosition, 0);
+    }
+
+    internal override void ReceiveAnimationStarting(CompositionAnimation animation)
+    {
+        _interactionTracker.ChangeState(new InteractionTrackerCustomAnimationState(_interactionTracker, animation));
     }
 }

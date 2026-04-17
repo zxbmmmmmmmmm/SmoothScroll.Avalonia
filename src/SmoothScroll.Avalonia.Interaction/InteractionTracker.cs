@@ -89,33 +89,8 @@ public partial class InteractionTracker : CompositionObject
 
     public async Task TryUpdatePositionWithAnimation(CompositionAnimation animation)
     {
-        if (_state is InteractionTrackerInteractingState)
-        {
-            // Ignored
-            return;
-        }
-        if (animation is Vector3DKeyFrameAnimation keyFrameAnimation)
-        {
-            var duration = keyFrameAnimation.Duration;
-            Server.StartPositionAnimation(keyFrameAnimation);
-            var state = new InteractionTrackerCustomAnimationState(this);
-            ChangeState(state);
-            await Task.Delay(duration);
-            if (_state == state)
-            {
-                ChangeState(new InteractionTrackerIdleState(this, 0));
-            }
-
-        }
-        else if (animation is ExpressionAnimation expressionAnimation)
-        {
-            Server.StartPositionAnimation(expressionAnimation);
-            ChangeState(new InteractionTrackerCustomAnimationState(this));
-        }
-        else
-        {
-            throw new ArgumentException("Only Vector3DKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
-        }
+        animation.Target = nameof(Server.Position);
+        _state.ReceiveAnimationStarting(animation);
     }
 
     public async Task TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
@@ -129,7 +104,7 @@ public partial class InteractionTracker : CompositionObject
         {
             var duration = keyFrameAnimation.Duration;
 
-            var handler = new InteractionTrackerScaleAnimationHandler(this, animation, centerPoint, Server.Compositor);
+            var handler = new CustomAnimationHandler(this, animation, centerPoint, Server.Compositor);
             handler.Initialize();
 
             var state = new InteractionTrackerCustomAnimationState(this);
@@ -144,7 +119,7 @@ public partial class InteractionTracker : CompositionObject
         else if (animation is ExpressionAnimation)
         {
 
-            var handler = new InteractionTrackerScaleAnimationHandler(this, animation, centerPoint, Server.Compositor);
+            var handler = new CustomAnimationHandler(this, animation, centerPoint, Server.Compositor);
             handler.Initialize();
 
             ChangeState(new InteractionTrackerCustomAnimationState(this));
