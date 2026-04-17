@@ -13,10 +13,22 @@ namespace SmoothScroll.Avalonia.Interaction;
 public partial class InteractionTracker : CompositionObject
 {
     private int _requestId = 0;
-    public IInteractionTrackerOwner? Owner { get; init; }
-
 
     private InteractionTrackerState _state;
+
+    private int _count = 0;
+
+    internal new ServerInteractionTracker Server { get; }
+
+    internal InteractionTracker(Compositor compositor, ServerInteractionTracker server) : base(compositor, server)
+    {
+        Server = server;
+        Server.Activate();
+        _state = new InteractionTrackerIdleState(this, 0, isInitialIdleState: true);
+    }
+
+
+    public IInteractionTrackerOwner? Owner { get; init; }
 
     public double MinScale { get; set; } = 1.0;
 
@@ -54,15 +66,93 @@ public partial class InteractionTracker : CompositionObject
 
     public double Scale => Server.Scale;
 
-    private int _count = 0;
+    public int TryUpdatePosition(Vector3D value)
+    => TryUpdatePosition(value, InteractionTrackerClampingOption.Auto);
 
-    internal new ServerInteractionTracker Server { get; }
+    public int TryUpdatePositionBy(Vector3D amount)
+        => TryUpdatePosition(Server.Position + amount);
 
-    internal InteractionTracker(Compositor compositor, ServerInteractionTracker server) : base(compositor, server)
+    public int TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option)
     {
-        Server = server;
-        Server.Activate();
-        _state = new InteractionTrackerIdleState(this, 0, isInitialIdleState: true);
+        var id = Interlocked.Increment(ref _requestId);
+        _state.TryUpdatePosition(value, option, id);
+        return id;
+    }
+
+    public int TryUpdatePositionBy(Vector3D amount, InteractionTrackerClampingOption option)
+        => TryUpdatePosition(Server.Position + amount, option);
+
+    public void TryUpdateScale(double scale, Vector3D centerPoint)
+    {
+        SetScale(scale, 0);
+    }
+
+    public async Task TryUpdatePositionWithAnimation(CompositionAnimation animation)
+    {
+        if (_state is InteractionTrackerInteractingState)
+        {
+            // Ignored
+            return;
+        }
+        if (animation is Vector3DKeyFrameAnimation keyFrameAnimation)
+        {
+            var duration = keyFrameAnimation.Duration;
+            Server.StartPositionAnimation(keyFrameAnimation);
+            var state = new InteractionTrackerCustomAnimationState(this);
+            ChangeState(state);
+            await Task.Delay(duration);
+            if (_state == state)
+            {
+                ChangeState(new InteractionTrackerIdleState(this, 0));
+            }
+
+        }
+        else if (animation is ExpressionAnimation expressionAnimation)
+        {
+            Server.StartPositionAnimation(expressionAnimation);
+            ChangeState(new InteractionTrackerCustomAnimationState(this));
+        }
+        else
+        {
+            throw new ArgumentException("Only Vector3DKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+        }
+    }
+
+    public async Task TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
+    {
+        if (_state is InteractionTrackerInteractingState)
+        {
+            // Ignored
+            return;
+        }
+        if (animation is DoubleKeyFrameAnimation keyFrameAnimation)
+        {
+            var duration = keyFrameAnimation.Duration;
+
+            var handler = new InteractionTrackerScaleAnimationHandler(this, animation, centerPoint, Server.Compositor);
+            handler.Initialize();
+
+            var state = new InteractionTrackerCustomAnimationState(this);
+            ChangeState(state);
+            await Task.Delay(duration);
+            if (_state == state)
+            {
+                ChangeState(new InteractionTrackerIdleState(this, 0));
+            }
+            handler.Stop();
+        }
+        else if (animation is ExpressionAnimation)
+        {
+
+            var handler = new InteractionTrackerScaleAnimationHandler(this, animation, centerPoint, Server.Compositor);
+            handler.Initialize();
+
+            ChangeState(new InteractionTrackerCustomAnimationState(this));
+        }
+        else
+        {
+            throw new ArgumentException("Only DoubleKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+        }
     }
 
     internal void SetPosition(Vector3D newPosition, int requestId)
@@ -103,11 +193,6 @@ public partial class InteractionTracker : CompositionObject
         _state = newState;
     }
 
-    [Conditional("INTERACTION_TRACKER_TRACE")]
-    private static void WriteStateTransition(int count, string previousState, string newState)
-    {
-        Debug.WriteLine($"{count}:{previousState} -> {newState}");
-    }
 
     internal void StartUserManipulation(Point position, IPointer pointer)
     {
@@ -139,92 +224,11 @@ public partial class InteractionTracker : CompositionObject
         _state.ReceivePointerWheel(-delta, isHorizontal);
     }
 
-    public int TryUpdatePosition(Vector3D value)
-        => TryUpdatePosition(value, InteractionTrackerClampingOption.Auto);
 
-    public int TryUpdatePositionBy(Vector3D amount)
-        => TryUpdatePosition(Server.Position + amount);
-
-    public int TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option)
+    [Conditional("INTERACTION_TRACKER_TRACE")]
+    private static void WriteStateTransition(int count, string previousState, string newState)
     {
-        var id = Interlocked.Increment(ref _requestId);
-        _state.TryUpdatePosition(value, option, id);
-        return id;
-    }
-
-    public int TryUpdatePositionBy(Vector3D amount, InteractionTrackerClampingOption option)
-        => TryUpdatePosition(Server.Position + amount, option);
-
-    public void TryUpdateScale(double scale, Vector3D centerPoint)
-    {
-        SetScale(scale, 0);
-    }
-    public async Task TryUpdatePositionWithAnimation(CompositionAnimation animation)
-    {
-        if(_state is InteractionTrackerInteractingState)
-        {
-            // Ignored
-            return;
-        }
-        if(animation is Vector3DKeyFrameAnimation keyFrameAnimation)
-        {
-            var duration = keyFrameAnimation.Duration;
-            Server.StartPositionAnimation(keyFrameAnimation);
-            var state = new InteractionTrackerCustomAnimationState(this);
-            ChangeState(state);
-            await Task.Delay(duration);
-            if(_state == state)
-            {
-                ChangeState(new InteractionTrackerIdleState(this, 0));
-            }
-
-        }
-        else if(animation is ExpressionAnimation expressionAnimation)
-        {
-            Server.StartPositionAnimation(expressionAnimation);
-            ChangeState(new InteractionTrackerCustomAnimationState(this));
-        }
-        else
-        {
-            throw new ArgumentException("Only Vector3DKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
-        }       
-    }
- 
-    public async Task TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
-    {
-        if (_state is InteractionTrackerInteractingState)
-        {
-            // Ignored
-            return;
-        }
-        if (animation is DoubleKeyFrameAnimation keyFrameAnimation)
-        {
-            var duration = keyFrameAnimation.Duration;
-
-            var handler = new InteractionTrackerScaleAnimationHandler(this, animation, centerPoint, Server.Compositor);
-            handler.Initialize();
-
-            var state = new InteractionTrackerCustomAnimationState(this);
-            ChangeState(state);
-            await Task.Delay(duration);
-            if (_state == state)
-            {
-                ChangeState(new InteractionTrackerIdleState(this, 0));
-            }
-            handler.Stop();
-        }
-        else if (animation is ExpressionAnimation expressionAnimation)
-        {
-
-            var handler = new InteractionTrackerScaleAnimationHandler(this, animation, centerPoint, Server.Compositor);
-            handler.Initialize();
-
-            ChangeState(new InteractionTrackerCustomAnimationState(this));
-        }
-        else
-        {
-            throw new ArgumentException("Only DoubleKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
-        }
+        Debug.WriteLine($"{count}:{previousState} -> {newState}");
     }
 
 }
