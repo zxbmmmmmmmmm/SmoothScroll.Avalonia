@@ -89,45 +89,22 @@ public partial class InteractionTracker : CompositionObject
 
     public async Task TryUpdatePositionWithAnimation(CompositionAnimation animation)
     {
+        if(animation is not DoubleKeyFrameAnimation and not ExpressionAnimation)
+        {
+            throw new ArgumentException("Only DoubleKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+        }
         animation.Target = nameof(Server.Position);
         _state.ReceiveAnimationStarting(animation);
     }
 
     public async Task TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
     {
-        if (_state is InteractionTrackerInteractingState)
-        {
-            // Ignored
-            return;
-        }
-        if (animation is DoubleKeyFrameAnimation keyFrameAnimation)
-        {
-            var duration = keyFrameAnimation.Duration;
-
-            var handler = new CustomAnimationHandler(this, animation, centerPoint, Server.Compositor);
-            handler.Initialize();
-
-            var state = new InteractionTrackerCustomAnimationState(this);
-            ChangeState(state);
-            await Task.Delay(duration);
-            if (_state == state)
-            {
-                ChangeState(new InteractionTrackerIdleState(this, 0));
-            }
-            handler.Stop();
-        }
-        else if (animation is ExpressionAnimation)
-        {
-
-            var handler = new CustomAnimationHandler(this, animation, centerPoint, Server.Compositor);
-            handler.Initialize();
-
-            ChangeState(new InteractionTrackerCustomAnimationState(this));
-        }
-        else
+        if (animation is not DoubleKeyFrameAnimation and not ExpressionAnimation)
         {
             throw new ArgumentException("Only DoubleKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
         }
+        animation.Target = nameof(Server.Scale);
+        _state.ReceiveAnimationStarting(animation, centerPoint);
     }
 
     internal void SetPosition(Vector3D newPosition, int requestId)

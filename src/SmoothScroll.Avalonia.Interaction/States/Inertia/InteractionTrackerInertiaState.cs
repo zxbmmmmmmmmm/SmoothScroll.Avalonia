@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Input;
+using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -197,6 +198,12 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
         {
             activeInputInertiaHandler.ReceiveBoundsUpdate();
         }
+    }
+
+    internal override void ReceiveAnimationStarting(CompositionAnimation animation, Vector3D? scaleCenterPoint = null)
+    {
+        _handler.Stop();
+        _interactionTracker.ChangeState(new InteractionTrackerCustomAnimationState(_interactionTracker, animation, scaleCenterPoint));
     }
 
 }

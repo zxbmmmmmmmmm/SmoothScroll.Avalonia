@@ -25,7 +25,7 @@ internal abstract class InteractionTrackerState
     internal abstract void ReceiveBoundsUpdate();
     internal abstract void TryUpdatePositionWithAdditionalVelocity(Vector3D velocityInPixelsPerSecond, int requestId);
     internal abstract void TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option, int requestId);
-    internal virtual void ReceiveAnimationStarting(CompositionAnimation animation)
+    internal virtual void ReceiveAnimationStarting(CompositionAnimation animation, Vector3D? scaleCenterPoint = null)
     {
 
     }

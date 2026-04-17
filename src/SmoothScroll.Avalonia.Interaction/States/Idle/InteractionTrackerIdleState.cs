@@ -93,8 +93,8 @@ internal sealed class InteractionTrackerIdleState : InteractionTrackerState
         _interactionTracker.SetPosition(clampedPosition, 0);
     }
 
-    internal override void ReceiveAnimationStarting(CompositionAnimation animation)
+    internal override void ReceiveAnimationStarting(CompositionAnimation animation, Vector3D? centerPoint = null)
     {
-        _interactionTracker.ChangeState(new InteractionTrackerCustomAnimationState(_interactionTracker, animation));
+        _interactionTracker.ChangeState(new InteractionTrackerCustomAnimationState(_interactionTracker, animation, centerPoint));
     }
 }

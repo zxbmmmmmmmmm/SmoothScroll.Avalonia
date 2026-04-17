@@ -10,26 +10,25 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
 {
     internal override string Name => "CustomAnimationState";
 
-    
+    private readonly CustomAnimationHandler _animationHandler;
 
-    public InteractionTrackerCustomAnimationState(InteractionTracker interactionTracker, CompositionAnimation animation) : base(interactionTracker)
+
+
+    public InteractionTrackerCustomAnimationState(
+        InteractionTracker interactionTracker,
+        CompositionAnimation animation,
+        Vector3D? scaleCenterPoint = null) : base(interactionTracker)
     {
         EnterState(interactionTracker.Owner);
-
-        if (animation is Vector3DKeyFrameAnimation keyFrameAnimation)
+        if(scaleCenterPoint is null)
         {
-            
-
-        }
-        else if (animation is ExpressionAnimation expressionAnimation)
-        {
-            
+            _animationHandler = new PositionAnimatinoHandler(interactionTracker, animation, interactionTracker.Server.Compositor);
         }
         else
         {
-            throw new ArgumentException("Only Vector3DKeyFrameAnimation and ExpressionAnimation are supported.", nameof(animation));
+            _animationHandler = new ScaleAnimationHandler(interactionTracker, animation, scaleCenterPoint.Value, interactionTracker.Server.Compositor);
         }
-
+        _animationHandler.Start();
     }
 
     protected override void EnterState(IInteractionTrackerOwner? owner)
@@ -63,10 +62,15 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
     {
     }
 
+    internal override void ReceiveAnimationStarting(CompositionAnimation animation, Vector3D? scaleCenterPoint = null)
+    {
+        _animationHandler.Stop();
+        _interactionTracker.ChangeState(new InteractionTrackerCustomAnimationState(_interactionTracker, animation, scaleCenterPoint));
+    }
+
     internal override void TryUpdatePositionWithAdditionalVelocity(Vector3D velocityInPixelsPerSecond, int requestId)
     {
-        // TODO: Stop current animation. Currently, the TryUpdate[Position|Scale]WithAnimation methods are not implemented.
-
+        _animationHandler.Stop();
         // State changes to inertia with inertia modifiers evaluated using requested velocity as initial velocity.
         // TODO: inertia modifiers not yet implemented.
         _interactionTracker.ChangeState(new InteractionTrackerInertiaState(
@@ -80,6 +84,7 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
 
     internal override void TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option, int requestId)
     {
+        _animationHandler.Stop();
         if (option == InteractionTrackerClampingOption.Auto)
         {
             value = Vector3D.Clamp(value, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
