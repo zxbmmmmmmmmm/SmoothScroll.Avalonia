@@ -334,7 +334,17 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
 
         var oldOffset = Offset;
-        SetCurrentValue(OffsetProperty, offset);
+
+        if (GetCompositionVisual()?.Compositor is { } compositor)
+        {
+            var animation = compositor.CreateVector3DKeyFrameAnimation();
+            animation.Duration = TimeSpan.FromMilliseconds(400);
+            animation.InsertKeyFrame(1.0f, new Vector3D(offset.X, offset.Y, 0));
+            _interactionTracker?.TryUpdatePositionWithAnimation(animation);
+        }
+
+        // TODO: Allow disabling animation and directly setting the offset.
+        // SetCurrentValue(OffsetProperty, offset);
 
         // It's possible that the Offset coercion has changed the offset back to its previous value,
         // this is common for floating point rounding errors.
