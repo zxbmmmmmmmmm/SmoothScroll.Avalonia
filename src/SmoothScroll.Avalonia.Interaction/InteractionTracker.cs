@@ -24,7 +24,7 @@ public partial class InteractionTracker : CompositionObject
     {
         Server = server;
         Server.Activate();
-        _state = new InteractionTrackerIdleState(this, 0, isInitialIdleState: true);
+        _state = new IdleState(this, 0, isInitialIdleState: true);
     }
 
 

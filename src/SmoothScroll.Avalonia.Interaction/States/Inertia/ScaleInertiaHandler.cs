@@ -6,7 +6,7 @@ using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
-internal class InteractionTrackerScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHandler, IServerClockItem
+internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHandler, IServerClockItem
 {
     // InteractionTracker works at 60 FPS, per documentation
     // https://learn.microsoft.com/en-us/windows/uwp/composition/interaction-tracker-manipulations#why-use-interactiontracker
@@ -31,7 +31,7 @@ internal class InteractionTrackerScaleInertiaHandler : ServerObject, IInteractio
     public Vector3D FinalPosition { get; set; }
     public Vector3D FinalModifiedPosition { get; set; }
 
-    public InteractionTrackerScaleInertiaHandler(
+    public ScaleInertiaHandler(
         ServerCompositor serverCompositor,
         InteractionTracker interactionTracker,
         Point scaleOrigin,
@@ -109,7 +109,7 @@ internal class InteractionTrackerScaleInertiaHandler : ServerObject, IInteractio
 
             Dispatcher.UIThread.Post(() =>
             {
-                _interactionTracker.ChangeState(new InteractionTrackerInertiaState(
+                _interactionTracker.ChangeState(new InertiaState(
                     _interactionTracker,
                     default, default, 0
                     , requestId: 0, false));

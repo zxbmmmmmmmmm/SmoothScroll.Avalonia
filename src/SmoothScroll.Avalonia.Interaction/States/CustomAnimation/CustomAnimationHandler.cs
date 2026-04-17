@@ -55,7 +55,7 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
         {
             Stop();
             Dispatcher.UIThread.Post(() => {
-                InteractionTracker.ChangeState(new InteractionTrackerInertiaState(
+                InteractionTracker.ChangeState(new InertiaState(
                     InteractionTracker,
                     default, default, 0
                     , requestId: 0, false));

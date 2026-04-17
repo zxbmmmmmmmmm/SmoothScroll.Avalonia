@@ -5,7 +5,7 @@ using Avalonia.Rendering.Composition.Server;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
-internal sealed partial class InteractionTrackerActiveInputInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
+internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
 {
     private readonly InteractionTracker _interactionTracker;
     private readonly AxisHelper _xHelper;
@@ -25,7 +25,7 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
     public Vector3D FinalModifiedPosition => new Vector3D(_xHelper.FinalModifiedValue, _yHelper.FinalModifiedValue, _zHelper.FinalModifiedValue);
     public double FinalModifiedScale => _interactionTracker.Scale; // TODO: Scale not yet implemented
 
-    public InteractionTrackerActiveInputInertiaHandler(ServerCompositor serverCompositor, InteractionTracker interactionTracker, Vector3D translationVelocities, int requestId)
+    public ActiveInputInertiaHandler(ServerCompositor serverCompositor, InteractionTracker interactionTracker, Vector3D translationVelocities, int requestId)
         : base(serverCompositor)
     {
         _interactionTracker = interactionTracker;
@@ -68,7 +68,7 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
         if (_xHelper.HasCompleted && _yHelper.HasCompleted && _zHelper.HasCompleted)
         {
             _interactionTracker.SetPosition(FinalModifiedPosition, _requestId);
-            _interactionTracker.ChangeState(new InteractionTrackerIdleState(_interactionTracker, _requestId));
+            _interactionTracker.ChangeState(new IdleState(_interactionTracker, _requestId));
             Stop();
             return;
         }
@@ -93,7 +93,7 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
         private double? _dampingStatePosition;
         private double? _initialDampingVelocity;
 
-        internal InteractionTrackerActiveInputInertiaHandler Handler { get; }
+        internal ActiveInputInertiaHandler Handler { get; }
         internal double DecayRate { get; }
         internal double InitialVelocity { get; }
         internal double InitialValue { get; }
@@ -104,7 +104,7 @@ internal sealed partial class InteractionTrackerActiveInputInertiaHandler : Serv
 
         internal bool HasCompleted { get; private set; }
 
-        public AxisHelper(InteractionTrackerActiveInputInertiaHandler handler, Vector3D velocities, Axis axis)
+        public AxisHelper(ActiveInputInertiaHandler handler, Vector3D velocities, Axis axis)
         {
             Axis = axis;
             Handler = handler;

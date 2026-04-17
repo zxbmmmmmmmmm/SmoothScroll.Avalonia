@@ -6,13 +6,13 @@ using Avalonia.Styling;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
-internal sealed class InteractionTrackerCustomAnimationState : InteractionTrackerState
+internal sealed class CustomAnimationState : InteractionTrackerState
 {
     internal override string Name => "CustomAnimationState";
 
     private readonly CustomAnimationHandler _animationHandler;
 
-    public InteractionTrackerCustomAnimationState(
+    public CustomAnimationState(
         InteractionTracker interactionTracker,
         CompositionAnimation animation,
         Vector3D? scaleCenterPoint = null) : base(interactionTracker)
@@ -38,7 +38,7 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
     internal override void StartUserManipulation(Point position, IPointer pointer)
     {
         _animationHandler.Stop();
-        _interactionTracker.ChangeState(new InteractionTrackerInteractingState(_interactionTracker));
+        _interactionTracker.ChangeState(new InteractingState(_interactionTracker));
     }
 
     internal override void CompleteUserManipulation()
@@ -55,7 +55,7 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
 
         var scaleVelocity = Math.Log(delta) / 0.2;
 
-        _interactionTracker.ChangeState(new InteractionTrackerInertiaState(
+        _interactionTracker.ChangeState(new InertiaState(
             _interactionTracker,
             default,
             requestId: 0,
@@ -79,7 +79,7 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
     internal override void ReceiveAnimationStarting(CompositionAnimation animation, Vector3D? scaleCenterPoint = null)
     {
         _animationHandler.Stop();
-        _interactionTracker.ChangeState(new InteractionTrackerCustomAnimationState(_interactionTracker, animation, scaleCenterPoint));
+        _interactionTracker.ChangeState(new CustomAnimationState(_interactionTracker, animation, scaleCenterPoint));
     }
 
     internal override void TryUpdatePositionWithAdditionalVelocity(Vector3D velocityInPixelsPerSecond, int requestId)
@@ -87,7 +87,7 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
         _animationHandler.Stop();
         // State changes to inertia with inertia modifiers evaluated using requested velocity as initial velocity.
         // TODO: inertia modifiers not yet implemented.
-        _interactionTracker.ChangeState(new InteractionTrackerInertiaState(
+        _interactionTracker.ChangeState(new InertiaState(
             _interactionTracker,
             velocityInPixelsPerSecond,
             default,
@@ -105,7 +105,7 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
         }
 
         _interactionTracker.SetPosition(value, requestId);
-        _interactionTracker.ChangeState(new InteractionTrackerIdleState(_interactionTracker, requestId));
+        _interactionTracker.ChangeState(new IdleState(_interactionTracker, requestId));
     }
 
     internal override void ReceiveBoundsUpdate()

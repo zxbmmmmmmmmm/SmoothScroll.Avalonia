@@ -3,7 +3,7 @@ using Avalonia.Input;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
-internal sealed class InteractionTrackerInteractingState : InteractionTrackerState
+internal sealed class InteractingState : InteractionTrackerState
 {
     private const double ReferenceRange = 2000;
     private const double Tension = 0.5;
@@ -13,7 +13,7 @@ internal sealed class InteractionTrackerInteractingState : InteractionTrackerSta
     private double _previousScale;
     private Point _previousOrigin;
     private Vector3D _position;
-    public InteractionTrackerInteractingState(InteractionTracker interactionTracker) : base(interactionTracker)
+    public InteractingState(InteractionTracker interactionTracker) : base(interactionTracker)
     {
         _previousScale = interactionTracker.Scale;
         EnterState(interactionTracker.Owner);
@@ -37,7 +37,7 @@ internal sealed class InteractionTrackerInteractingState : InteractionTrackerSta
 
     internal override void CompleteUserManipulation()
     {
-        _interactionTracker.ChangeState(new InteractionTrackerInertiaState(_interactionTracker, default, default, 0, requestId: 0, false));
+        _interactionTracker.ChangeState(new InertiaState(_interactionTracker, default, default, 0, requestId: 0, false));
     }
 
     internal override void ReceiveScaleDelta(Point origin, double scaleDelta)
@@ -105,7 +105,7 @@ internal sealed class InteractionTrackerInteractingState : InteractionTrackerSta
 
     internal override void ReceiveInertiaStarting(Point linearVelocity)
     {
-        _interactionTracker.ChangeState(new InteractionTrackerInertiaState(
+        _interactionTracker.ChangeState(new InertiaState(
             _interactionTracker,
             new Vector3D((float)linearVelocity.X, (float)linearVelocity.Y, 0),
             default,
