@@ -130,7 +130,7 @@ internal class PositionAnimationHandler : CustomAnimationHandler
 
     protected override void Evaluate(ExpressionVariant animationValue)
     {
-        var position = animationValue.Vector3;
+        var position = animationValue.Vector3D;
         var modifiedPosition = new Vector3D(
             Math.Clamp(position.X, InteractionTracker.MinPosition.X, InteractionTracker.MaxPosition.X),
             Math.Clamp(position.Y, InteractionTracker.MinPosition.Y, InteractionTracker.MaxPosition.Y),
