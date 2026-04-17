@@ -84,7 +84,13 @@ public partial class InteractionTracker : CompositionObject
 
     public void TryUpdateScale(double scale, Vector3D centerPoint)
     {
-        SetScale(scale, 0);
+        var currentScale = Server.Scale;
+        if (MathUtilities.AreClose(currentScale, scale))
+            return;
+        var id = Interlocked.Increment(ref _requestId);
+        var scaleFactor = scale / currentScale;
+        var adjustedPosition = centerPoint + ((Server.Position - centerPoint) * scaleFactor);
+        SetPositionAndScale(adjustedPosition,scale, id);
     }
 
     public void TryUpdatePositionWithAnimation(CompositionAnimation animation)
