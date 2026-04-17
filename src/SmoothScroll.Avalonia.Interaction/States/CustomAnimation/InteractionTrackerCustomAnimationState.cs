@@ -12,8 +12,6 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
 
     private readonly CustomAnimationHandler _animationHandler;
 
-
-
     public InteractionTrackerCustomAnimationState(
         InteractionTracker interactionTracker,
         CompositionAnimation animation,
@@ -22,7 +20,7 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
         EnterState(interactionTracker.Owner);
         if(scaleCenterPoint is null)
         {
-            _animationHandler = new PositionAnimatinoHandler(interactionTracker, animation, interactionTracker.Server.Compositor);
+            _animationHandler = new PositionAnimationHandler(interactionTracker, animation, interactionTracker.Server.Compositor);
         }
         else
         {
@@ -39,6 +37,7 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
 
     internal override void StartUserManipulation(Point position, IPointer pointer)
     {
+        _animationHandler.Stop();
         _interactionTracker.ChangeState(new InteractionTrackerInteractingState(_interactionTracker));
     }
 
@@ -46,8 +45,23 @@ internal sealed class InteractionTrackerCustomAnimationState : InteractionTracke
     {
     }
 
-    internal override void ReceiveScaleDelta(Point origin, double scale)
+    internal override void ReceiveScaleDelta(Point origin, double delta)
     {
+        if (delta <= 0 || double.IsNaN(delta) || double.IsInfinity(delta))
+        {
+            return;
+        }
+        _animationHandler.Stop();
+
+        var scaleVelocity = Math.Log(delta) / 0.2;
+
+        _interactionTracker.ChangeState(new InteractionTrackerInertiaState(
+            _interactionTracker,
+            default,
+            requestId: 0,
+            isFromPointerWheel: true,
+            scaleVelocity: scaleVelocity,
+            scaleOrigin: origin));
     }
 
     internal override void ReceiveManipulationDelta(Point translationDelta)

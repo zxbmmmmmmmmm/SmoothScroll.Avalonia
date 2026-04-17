@@ -77,9 +77,9 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
         // > of Position (and potentially clamped) the next time InteractionTracker enters
         // > the Inertia state.
         // TODO: Commented out for now. It's wrong to do this when transitioning from interacting to inertia.
-        //var position = _interactionTracker.Position;
-        //_interactionTracker.MinPosition = Vector3.Min(_interactionTracker.MinPosition, position);
-        //_interactionTracker.MaxPosition = Vector3.Max(_interactionTracker.MaxPosition, position);
+        //var position = InteractionTracker.Position;
+        //InteractionTracker.MinPosition = Vector3.Min(InteractionTracker.MinPosition, position);
+        //InteractionTracker.MaxPosition = Vector3.Max(InteractionTracker.MaxPosition, position);
 
         _handler.Start();
     }
@@ -101,6 +101,8 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
             return;
         }
 
+        _handler.Stop();
+
         var inputVelocity = Math.Log(delta) / 0.2;
 
         var accumulatedVelocity = inputVelocity;
@@ -120,8 +122,6 @@ internal sealed class InteractionTrackerInertiaState : InteractionTrackerState
             scaleVelocity: accumulatedVelocity,
             requestId: 0,
             isFromPointerWheel: true));
-
-        _handler.Stop();
     }
 
     internal override void ReceiveManipulationDelta(Point translationDelta)

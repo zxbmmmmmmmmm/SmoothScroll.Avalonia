@@ -11,18 +11,18 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
 {
-    private IAnimationInstance? _animationInstance = null;
+    private IAnimationInstance? _animationInstance;
     private readonly CompositionAnimation _animation;
-    protected readonly InteractionTracker _interactionTracker;
     private TimeSpan _startTime;
-    private TimeSpan? _duration;
+    private readonly TimeSpan? _duration;
+    protected readonly InteractionTracker InteractionTracker;
 
-    public CustomAnimationHandler(
+    protected CustomAnimationHandler(
         InteractionTracker interactionTracker,
         CompositionAnimation animation,
         ServerCompositor compositor) : base(compositor)
     {
-        _interactionTracker = interactionTracker;
+        InteractionTracker = interactionTracker;
         _animation = animation;
         if(animation is KeyFrameAnimation keyFrameAnimation)
         {
@@ -32,10 +32,10 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
 
     public virtual void Start()
     {
-        var targetProperty = _interactionTracker.Server.GetCompositionProperty(_animation.Target!)!;
-        _animationInstance = _animation.CreateInstance(_interactionTracker.Server, null);
+        var targetProperty = InteractionTracker.Server.GetCompositionProperty(_animation.Target!)!;
+        _animationInstance = _animation.CreateInstance(InteractionTracker.Server, null);
         _animationInstance.Initialize(Compositor.Clock.Elapsed,
-            targetProperty.GetVariant!(_interactionTracker.Server), targetProperty);
+            targetProperty.GetVariant!(InteractionTracker.Server), targetProperty);
         _startTime = Compositor.Clock.Elapsed;
         Compositor.Animations.AddToClock(this);
         Activate();
@@ -55,14 +55,14 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
         {
             Stop();
             Dispatcher.UIThread.Post(() => {
-                _interactionTracker.ChangeState(new InteractionTrackerInertiaState(
-                    _interactionTracker,
+                InteractionTracker.ChangeState(new InteractionTrackerInertiaState(
+                    InteractionTracker,
                     default, default, 0
                     , requestId: 0, false));
             }, priority:
             DispatcherPriority.Render);
         }
-        var value = _animationInstance.Evaluate(elapsed, _interactionTracker.Position);
+        var value = _animationInstance.Evaluate(elapsed, InteractionTracker.Position);
         Evaluate(value);
     }
 
@@ -75,7 +75,11 @@ internal class ScaleAnimationHandler: CustomAnimationHandler
     private Vector3D _initialPosition;
     private double _initialScale;
 
-    public ScaleAnimationHandler(InteractionTracker interactionTracker, CompositionAnimation animation, Vector3D centerPoint, ServerCompositor compositor) 
+    public ScaleAnimationHandler(
+        InteractionTracker interactionTracker,
+        CompositionAnimation animation, 
+        Vector3D centerPoint,
+        ServerCompositor compositor) 
         : base(interactionTracker, animation, compositor)
     {
         _centerPoint = centerPoint;
@@ -83,8 +87,8 @@ internal class ScaleAnimationHandler: CustomAnimationHandler
 
     public override void Start()
     {
-        _initialPosition = _interactionTracker.Position;
-        _initialScale = _interactionTracker.Scale;
+        _initialPosition = InteractionTracker.Position;
+        _initialScale = InteractionTracker.Scale;
         base.Start();
     }
 
@@ -102,20 +106,23 @@ internal class ScaleAnimationHandler: CustomAnimationHandler
             currentPosition.Y - deltaY,
             currentPosition.Z);
 
-        var modifiedScale = Math.Clamp(scale, _interactionTracker.MinScale, _interactionTracker.MaxScale);
+        var modifiedScale = Math.Clamp(scale, InteractionTracker.MinScale, InteractionTracker.MaxScale);
         
 
-        if (!MathUtilities.AreClose(modifiedScale, _interactionTracker.MinScale)
-            && !MathUtilities.AreClose(modifiedScale, _interactionTracker.MaxScale))
+        if (!MathUtilities.AreClose(modifiedScale, InteractionTracker.MinScale)
+            && !MathUtilities.AreClose(modifiedScale, InteractionTracker.MaxScale))
         {
-            _interactionTracker.SetPositionAndScale(scaledNewPosition, modifiedScale, 0);
+            InteractionTracker.SetPositionAndScale(scaledNewPosition, modifiedScale, 0);
         }
     }
 }
 
-internal class PositionAnimatinoHandler : CustomAnimationHandler
+internal class PositionAnimationHandler : CustomAnimationHandler
 {
-    public PositionAnimatinoHandler(InteractionTracker interactionTracker, CompositionAnimation animation, ServerCompositor compositor)
+    public PositionAnimationHandler(
+        InteractionTracker interactionTracker,
+        CompositionAnimation animation, 
+        ServerCompositor compositor)
     : base(interactionTracker, animation, compositor)
     {
     }
@@ -124,10 +131,10 @@ internal class PositionAnimatinoHandler : CustomAnimationHandler
     {
         var position = animationValue.Vector3;
         var modifiedPosition = new Vector3D(
-            Math.Clamp(position.X, _interactionTracker.MinPosition.X, _interactionTracker.MaxPosition.X),
-            Math.Clamp(position.Y, _interactionTracker.MinPosition.Y, _interactionTracker.MaxPosition.Y),
-            Math.Clamp(position.Z, _interactionTracker.MinPosition.Z, _interactionTracker.MaxPosition.Z));
+            Math.Clamp(position.X, InteractionTracker.MinPosition.X, InteractionTracker.MaxPosition.X),
+            Math.Clamp(position.Y, InteractionTracker.MinPosition.Y, InteractionTracker.MaxPosition.Y),
+            Math.Clamp(position.Z, InteractionTracker.MinPosition.Z, InteractionTracker.MaxPosition.Z));
 
-        _interactionTracker.SetPosition(modifiedPosition, 0);
+        InteractionTracker.SetPosition(modifiedPosition, 0);
     }
 }
