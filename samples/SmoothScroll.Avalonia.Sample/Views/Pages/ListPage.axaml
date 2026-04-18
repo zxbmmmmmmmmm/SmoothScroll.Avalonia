@@ -14,8 +14,13 @@
         <viewModels:ListViewModel />
     </Design.DataContext>
     <Grid RowDefinitions="Auto,*" RowSpacing="4">
-        <Button x:Name="BringIntoViewButton" Click="BringIntoViewButton_Click" Content="Bring Random Item Into View" />
-
+        <StackPanel Orientation="Horizontal" Spacing="12">
+            <Button
+                x:Name="BringIntoViewButton"
+                Click="BringIntoViewButton_Click"
+                Content="Bring Random Item Into View" />
+            <ComboBox ItemsSource="{Binding AnimationTypeOptions}" SelectedItem="{Binding AnimationType, Mode=TwoWay}" />
+        </StackPanel>
         <ListBox
             x:Name="MyListBox"
             Grid.Row="1"
