@@ -18,6 +18,7 @@ using Avalonia.Threading;
 using Avalonia.Utilities;
 using Avalonia.VisualTree;
 using PropertyGenerator.Avalonia;
+using SmoothScroll.Avalonia.Controls.Easings;
 using SmoothScroll.Avalonia.Interaction;
 using Vector = Avalonia.Vector;
 
@@ -337,9 +338,24 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         if (GetCompositionVisual()?.Compositor is { } compositor)
         {
+            var targetVerticalPosition = offset.Y;
+            var deltaVerticalPosition = offset.Y - oldOffset.Y;
             var animation = compositor.CreateVector3DKeyFrameAnimation();
             animation.Duration = TimeSpan.FromMilliseconds(400);
-            animation.InsertKeyFrame(1.0f, new Vector3D(offset.X, offset.Y, 0), new CircularEaseOut());
+
+            // First keyframe with a quick dip.
+            if (Math.Abs(deltaVerticalPosition) > 5000)
+            {
+                animation.InsertKeyFrame(
+                    0.0001f,
+                    new Vector3D(offset.X, targetVerticalPosition - Math.Clamp(deltaVerticalPosition, -5000, 5000), 0),
+                    new StepEasing()); // Easing function for sudden change
+            }
+
+            animation.InsertKeyFrame(
+                1f,
+                new Vector3D(offset.X, targetVerticalPosition, 0),
+                new CircularEaseOut());
             _interactionTracker?.TryUpdatePositionWithAnimation(animation);
         }
 
