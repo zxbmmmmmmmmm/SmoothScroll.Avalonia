@@ -107,7 +107,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     public static readonly StyledProperty<bool> IsScrollChainingEnabledProperty =
         ScrollViewer.IsScrollChainingEnabledProperty.AddOwner<ScrollPresenter>();
 
-
+    public event EventHandler<ScrollAnimationStartingEventArgs>? ScrollAnimationStarting;
 
     //private ScrollFeaturesEnum _scrollFeatures = ScrollFeaturesEnum.None;
     private Interaction.InteractionTracker? _interactionTracker;
@@ -327,36 +327,38 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         double minX = ComputeScrollOffsetWithMinimalScroll(viewport.Left, viewport.Right, rectangle.Left, rectangle.Right);
         double minY = ComputeScrollOffsetWithMinimalScroll(viewport.Top, viewport.Bottom, rectangle.Top, rectangle.Bottom);
-        var offset = new Vector(minX, minY);
+        var endPosition = new Vector(minX, minY);
 
-        if (Offset.NearlyEquals(offset))
+        if (Offset.NearlyEquals(endPosition))
         {
             return false;
         }
 
-        var oldOffset = Offset;
+        var startingPosition = Offset;
 
         if (GetCompositionVisual()?.Compositor is { } compositor)
         {
-            var targetVerticalPosition = offset.Y;
-            var deltaVerticalPosition = offset.Y - oldOffset.Y;
+            var targetVerticalPosition = endPosition.Y;
+            var deltaVerticalPosition = endPosition.Y - startingPosition.Y;
             var animation = compositor.CreateVector3DKeyFrameAnimation();
-            animation.Duration = TimeSpan.FromMilliseconds(400);
+            animation.Duration = TimeSpan.FromMilliseconds(500);
 
             // First keyframe with a quick dip.
             if (Math.Abs(deltaVerticalPosition) > 5000)
             {
                 animation.InsertKeyFrame(
                     0.0001f,
-                    new Vector3D(offset.X, targetVerticalPosition - Math.Clamp(deltaVerticalPosition, -5000, 5000), 0),
+                    new Vector3D(endPosition.X, targetVerticalPosition - Math.Clamp(deltaVerticalPosition, -5000, 5000), 0),
                     new StepEasing()); // Easing function for sudden change
             }
 
             animation.InsertKeyFrame(
                 1f,
-                new Vector3D(offset.X, targetVerticalPosition, 0),
+                new Vector3D(endPosition.X, targetVerticalPosition, 0),
                 new CircularEaseOut());
-            _interactionTracker?.TryUpdatePositionWithAnimation(animation);
+            var args = new ScrollAnimationStartingEventArgs(animation, startingPosition, endPosition);
+            ScrollAnimationStarting?.Invoke(this, args);
+            _interactionTracker?.TryUpdatePositionWithAnimation(args.Animation);
         }
 
         // TODO: Allow disabling animation and directly setting the offset.
@@ -364,7 +366,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         // It's possible that the Offset coercion has changed the offset back to its previous value,
         // this is common for floating point rounding errors.
-        return !Offset.NearlyEquals(oldOffset);
+        return !Offset.NearlyEquals(startingPosition);
     }
 
     /// <summary>

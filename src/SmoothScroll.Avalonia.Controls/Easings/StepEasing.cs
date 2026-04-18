@@ -3,7 +3,7 @@
 namespace SmoothScroll.Avalonia.Controls.Easings;
 
 
-public class StepEasing : Easing
+internal class StepEasing : Easing
 {
     public override double Ease(double progress)
     {
