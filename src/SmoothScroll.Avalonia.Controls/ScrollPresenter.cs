@@ -1238,24 +1238,24 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
 
 
-    public void CustomAnimationStateEntered(InteractionTracker sender, InteractionTrackerCustomAnimationStateEnteredArgs args)
+    void IInteractionTrackerOwner.CustomAnimationStateEntered(InteractionTracker sender, InteractionTrackerCustomAnimationStateEnteredArgs args)
     {
     }
 
-    public void IdleStateEntered(InteractionTracker sender, InteractionTrackerIdleStateEnteredArgs args)
+    void IInteractionTrackerOwner.IdleStateEntered(InteractionTracker sender, InteractionTrackerIdleStateEnteredArgs args)
     {
         _inertiaArgs = null;
         Dispatcher.UIThread.Post(InvalidateArrange);
     }
 
-    public void InertiaStateEntered(InteractionTracker sender, InteractionTrackerInertiaStateEnteredArgs args)
+    void IInteractionTrackerOwner.InertiaStateEntered(InteractionTracker sender, InteractionTrackerInertiaStateEnteredArgs args)
     {
         _inertiaArgs = args;
         EnsureScrollAnimation();
         UpdateScrollModified();
     }
 
-    public void InteractingStateEntered(InteractionTracker sender, InteractionTrackerInteractingStateEnteredArgs args)
+    void IInteractionTrackerOwner.InteractingStateEntered(InteractionTracker sender, InteractionTrackerInteractingStateEnteredArgs args)
     {
         _inertiaArgs = null;
         EnsureScrollAnimation();
