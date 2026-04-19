@@ -64,7 +64,7 @@ public partial class InteractionTracker : CompositionObject
         get;
         set
         {
-            if (!(field != value))
+            if (field == value)
                 return;
 
             field = value;
@@ -79,7 +79,7 @@ public partial class InteractionTracker : CompositionObject
         get;
         set
         {
-            if (!(field != value))
+            if (field == value)
                 return;
 
             field = value;
