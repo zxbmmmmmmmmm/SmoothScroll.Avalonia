@@ -45,8 +45,6 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
     {
         _interactionTracker.RunOnServerThread(_ =>
         {
-            Debug.Assert(Compositor.CheckAccess(), "Start must be called on the compositor thread.");
-
             if (Volatile.Read(ref _stopRequested) != 0)
             {
                 return;
