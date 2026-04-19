@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Rendering.Composition.Server;
 
 namespace SmoothScroll.Avalonia.Interaction;
+
 internal class PointerWheelInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
 {
     // InteractionTracker works at 60 FPS, per documentation
@@ -22,8 +23,13 @@ internal class PointerWheelInertiaHandler : ServerObject, IServerClockItem, IInt
 
     private Stopwatch? _stopwatch;
     private readonly InteractionTracker _interactionTracker;
+    private int _stopRequested;
 
-    public PointerWheelInertiaHandler(ServerCompositor serverCompositor, InteractionTracker interactionTracker, Vector3D translationVelocities)
+    public PointerWheelInertiaHandler(
+        ServerCompositor serverCompositor,
+        InteractionTracker interactionTracker,
+        Vector3D translationVelocities
+    )
         : base(serverCompositor)
     {
         _interactionTracker = interactionTracker;
@@ -50,18 +56,39 @@ internal class PointerWheelInertiaHandler : ServerObject, IServerClockItem, IInt
 
     public void Start()
     {
-        Compositor.Animations.AddToClock(this);
-        _stopwatch = Stopwatch.StartNew();
+        _interactionTracker.RunOnServerThread(_ =>
+        {
+            if (Volatile.Read(ref _stopRequested) != 0)
+            {
+                return;
+            }
+
+            Compositor.Animations.AddToClock(this);
+            _stopwatch = Stopwatch.StartNew();
+        });
     }
 
     public void Stop()
     {
-        Compositor.Animations.RemoveFromClock(this);
-        _stopwatch?.Stop();
+        if (Interlocked.Exchange(ref _stopRequested, 1) != 0)
+        {
+            return;
+        }
+
+        _interactionTracker.RunOnServerThread(_ =>
+        {
+            StopCore();
+        });
     }
 
     public void OnTick()
     {
+        if (Volatile.Read(ref _stopRequested) != 0)
+        {
+            StopCore();
+            return;
+        }
+
         var elapsedSeconds = _stopwatch!.ElapsedMilliseconds / 1000.0;
 
         // Exponential decay: v(t) = v0 * e^(-t/τ); x(t) = x0 + v0 * τ * (1 - e^(-t/τ))
@@ -81,7 +108,13 @@ internal class PointerWheelInertiaHandler : ServerObject, IServerClockItem, IInt
         if (hasStoppedByVelocity || hasReachedTarget || hasTimedOut)
         {
             _interactionTracker.ChangeState(new IdleState(_interactionTracker, requestId: 0));
-            Stop();
+            StopCore();
         }
+    }
+
+    private void StopCore()
+    {
+        Compositor.Animations.RemoveFromClock(this);
+        _stopwatch?.Stop();
     }
 }

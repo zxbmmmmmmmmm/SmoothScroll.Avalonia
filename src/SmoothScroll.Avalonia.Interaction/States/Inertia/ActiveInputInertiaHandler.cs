@@ -5,6 +5,7 @@ using Avalonia.Rendering.Composition.Server;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
+
 internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
 {
     private readonly InteractionTracker _interactionTracker;
@@ -14,6 +15,7 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
     private Stopwatch? _stopwatch;
     private readonly int _requestId = 0;
+    private int _stopRequested;
 
     // InteractionTracker works at 60 FPS, per documentation
     // https://learn.microsoft.com/en-us/windows/uwp/composition/interaction-tracker-manipulations#why-use-interactiontracker
@@ -25,7 +27,12 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
     public Vector3D FinalModifiedPosition => new Vector3D(_xHelper.FinalModifiedValue, _yHelper.FinalModifiedValue, _zHelper.FinalModifiedValue);
     public double FinalModifiedScale => _interactionTracker.Scale; // TODO: Scale not yet implemented
 
-    public ActiveInputInertiaHandler(ServerCompositor serverCompositor, InteractionTracker interactionTracker, Vector3D translationVelocities, int requestId)
+    public ActiveInputInertiaHandler(
+        ServerCompositor serverCompositor,
+        InteractionTracker interactionTracker,
+        Vector3D translationVelocities,
+        int requestId
+    )
         : base(serverCompositor)
     {
         _interactionTracker = interactionTracker;
@@ -36,15 +43,31 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
     public void Start()
     {
-        Compositor.Animations.AddToClock(this);
-        _stopwatch = Stopwatch.StartNew();
+        _interactionTracker.RunOnServerThread(_ =>
+        {
+            Debug.Assert(Compositor.CheckAccess(), "Start must be called on the compositor thread.");
 
+            if (Volatile.Read(ref _stopRequested) != 0)
+            {
+                return;
+            }
+
+            Compositor.Animations.AddToClock(this);
+            _stopwatch = Stopwatch.StartNew();
+        });
     }
 
     public void Stop()
     {
-        Compositor.Animations.RemoveFromClock(this);
-        _stopwatch?.Stop();
+        if (Interlocked.Exchange(ref _stopRequested, 1) != 0)
+        {
+            return;
+        }
+
+        _interactionTracker.RunOnServerThread(_ =>
+        {
+            StopCore();
+        });
     }
 
     public void ReceiveBoundsUpdate()
@@ -62,13 +85,19 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
     public void OnTick()
     {
+        if (Volatile.Read(ref _stopRequested) != 0)
+        {
+            StopCore();
+            return;
+        }
+
         var currentElapsedInSeconds = _stopwatch!.ElapsedMilliseconds / 1000.0f;
 
         if (_xHelper.HasCompleted && _yHelper.HasCompleted && _zHelper.HasCompleted)
         {
             _interactionTracker.SetPosition(FinalModifiedPosition, _requestId);
             _interactionTracker.ChangeState(new IdleState(_interactionTracker, _requestId));
-            Stop();
+            StopCore();
             return;
         }
 
@@ -79,6 +108,13 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
         _interactionTracker.SetPosition(newPosition, _requestId);
     }
+
+    private void StopCore()
+    {
+        Compositor.Animations.RemoveFromClock(this);
+        _stopwatch?.Stop();
+    }
+
     private enum Axis
     {
         X,
@@ -118,7 +154,6 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
             if (InitialValue < min || InitialValue > max)
             {
-
                 double wn = -Math.Log(DecayRate);
                 double settlingTimeBasedOnDecay = 10 / 2 / wn;
 
@@ -146,7 +181,6 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
         private double GetTimeToMinimumVelocity()
         {
-
             var minimumVelocity = 30.0f;
 
             return TimeToMinimumVelocityCore(Math.Abs(InitialVelocity), DecayRate, InitialValue);
@@ -216,7 +250,8 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
                 var target = FinalModifiedValue;
                 var y0 = _dampingStatePosition!.Value - target;
-                var currentOffset = DampingHelper.SolveCriticallyDampedWithVelocity(y0, _initialDampingVelocity!.Value, wn, elapsedInDamping);
+                var currentOffset =
+                    DampingHelper.SolveCriticallyDampedWithVelocity(y0, _initialDampingVelocity!.Value, wn, elapsedInDamping);
                 var finalOffset = DampingHelper.SolveCriticallyDampedWithVelocity(y0, _initialDampingVelocity!.Value, wn, settlingTime);
                 return target + currentOffset - finalOffset;
             }
@@ -252,7 +287,6 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
     }
 }
 
-
 // Equations from https://docs.google.com/presentation/d/152lQqvO6ImEGW2k98w-E5Dh8stBeRxBd/edit#slide=id.p51
 
 internal static class DampingHelper
@@ -280,7 +314,7 @@ internal static class DampingHelper
         // A = y0
         // B = v0 + wn * y0
         double exponent = Math.Exp(-wn * t);
-        
+
         // y(t) = (A + B*t) * e^(-wn * t)
         return (y0 + (v0 + wn * y0) * t) * exponent;
     }
