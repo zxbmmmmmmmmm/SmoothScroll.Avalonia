@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Platform;
 using Avalonia.Utilities;
 using Avalonia.VisualTree;
@@ -78,9 +79,9 @@ public class InputElementInteractionSource : IDisposable
     public InputElementInteractionSource(InputElement inputElement, InteractionTracker tracker)
     {
         _inputElement = inputElement;
-        _inputElement.PointerPressed += OnPointerPressed;
-        _inputElement.PointerMoved += OnPointerMoved;
-        _inputElement.PointerReleased += OnPointerReleased;
+        _inputElement.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
+        _inputElement.AddHandler(InputElement.PointerMovedEvent, OnPointerMoved, RoutingStrategies.Tunnel);
+        _inputElement.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, RoutingStrategies.Tunnel);
         _inputElement.PointerCaptureLost += OnPointerCaptureLost;
         _inputElement.PointerWheelChanged += OnPointerWheelChanged;
         _tracker = tracker;
@@ -196,7 +197,7 @@ public class InputElementInteractionSource : IDisposable
 
         var position = e.GetPosition(_inputElement);
 
-        if (_firstContact is not null && !_isInteracting && _firstContact.Captured != _inputElement)
+        if (_firstContact is not null && !_isInteracting)
         {
             ResetContacts();
         }
@@ -569,9 +570,9 @@ public class InputElementInteractionSource : IDisposable
             visual.DetachedFromVisualTree -= OnDetachedFromVisualTree;
         }
 
-        _inputElement.PointerPressed -= OnPointerPressed;
-        _inputElement.PointerMoved -= OnPointerMoved;
-        _inputElement.PointerReleased -= OnPointerReleased;
+        _inputElement.RemoveHandler(InputElement.PointerPressedEvent, OnPointerPressed);
+        _inputElement.RemoveHandler(InputElement.PointerMovedEvent, OnPointerMoved);
+        _inputElement.RemoveHandler(InputElement.PointerReleasedEvent, OnPointerReleased);
         _inputElement.PointerCaptureLost -= OnPointerCaptureLost;
         _inputElement.PointerWheelChanged -= OnPointerWheelChanged;
     }
