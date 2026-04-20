@@ -17,7 +17,7 @@ internal abstract class InertiaState : InteractionTrackerState
     internal override string Name => "InertiaState";
 
     protected InertiaState(
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         int requestId) : base(interactionTracker)
     {
         RequestId = requestId;

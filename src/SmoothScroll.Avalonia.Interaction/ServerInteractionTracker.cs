@@ -11,9 +11,29 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 internal partial class ServerInteractionTracker
 {
+    private InteractionTrackerState _state;
+    private int _count = 0;
+
+
+
+    [Conditional("INTERACTION_TRACKER_TRACE")]
+    private static void WriteStateTransition(int count, string previousState, string newState)
+    {
+        Debug.WriteLine($"{count}:{previousState} -> {newState}");
+    }
+
+    internal void ChangeState(InteractionTrackerState newState)
+    {
+        Interlocked.Increment(ref _count);
+        WriteStateTransition(_count, _state.Name, newState.Name);
+        _state = newState;
+    }
+
+
     partial void Initialize()
     {
         _scale = 1;
+        _state = new IdleState(this, 0, isInitialIdleState: true);
     }
     public override CompositionProperty? GetCompositionProperty(string name)
     {
@@ -30,13 +50,6 @@ internal partial class ServerInteractionTracker
         if (name == "MaxScale")
             return s_IdOfMaxScaleProperty;
         return base.GetCompositionProperty(name);
-    }
-
-    public void StartPositionAnimation(CompositionAnimation animation)
-    {
-        var instance = animation.CreateInstance(this, null);
-        GetOrCreateAnimations().OnSetAnimatedValue(s_IdOfPositionProperty,
-            ref _position, Compositor.Clock.Elapsed, instance);
     }
 }
 

@@ -13,7 +13,7 @@ internal sealed class InteractingState : InteractionTrackerState
     private double _previousScale;
     private Point _previousOrigin;
     private Vector3D _position;
-    public InteractingState(InteractionTracker interactionTracker) : base(interactionTracker)
+    public InteractingState(ServerInteractionTracker interactionTracker) : base(interactionTracker)
     {
         _previousScale = interactionTracker.Scale;
         EnterState(interactionTracker.Owner);

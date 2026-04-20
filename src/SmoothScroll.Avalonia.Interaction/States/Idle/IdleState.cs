@@ -11,7 +11,7 @@ internal sealed class IdleState : InteractionTrackerState
 
     internal override string Name => "IdleState";
 
-    public IdleState(InteractionTracker interactionTracker, int requestId, bool isInitialIdleState = false) : base(interactionTracker)
+    public IdleState(ServerInteractionTracker interactionTracker, int requestId, bool isInitialIdleState = false) : base(interactionTracker)
     {
         _requestId = requestId;
         _isInitialIdleState = isInitialIdleState;

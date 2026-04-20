@@ -14,19 +14,13 @@ namespace SmoothScroll.Avalonia.Interaction;
 public partial class InteractionTracker : CompositionObject
 {
     private int _requestId = 0;
-    private int _count = 0;
-
-    private InteractionTrackerState _state;
-
     internal new ServerInteractionTracker Server { get; }
 
     internal InteractionTracker(Compositor compositor, ServerInteractionTracker server) : base(compositor, server)
     {
         Server = server;
         RunOnServerThread(static serverTracker => serverTracker.Activate());
-        _state = new IdleState(this, 0, isInitialIdleState: true);
     }
-
 
     public IInteractionTrackerOwner? Owner { get; init; }
 
@@ -197,13 +191,6 @@ public partial class InteractionTracker : CompositionObject
         NotifyValuesChanged(newPosition, newScale, requestId);
     }
 
-    internal void ChangeState(InteractionTrackerState newState)
-    {
-        Interlocked.Increment(ref _count);
-        WriteStateTransition(_count, _state.Name, newState.Name);
-        _state = newState;
-    }
-
 
     internal void StartUserManipulation(Point position, IPointer pointer)
     {
@@ -235,12 +222,6 @@ public partial class InteractionTracker : CompositionObject
         _state.ReceivePointerWheel(-delta, isHorizontal);
     }
 
-
-    [Conditional("INTERACTION_TRACKER_TRACE")]
-    private static void WriteStateTransition(int count, string previousState, string newState)
-    {
-        Debug.WriteLine($"{count}:{previousState} -> {newState}");
-    }
 
     private void NotifyValuesChanged(Vector3D position, double scale, int requestId)
     {

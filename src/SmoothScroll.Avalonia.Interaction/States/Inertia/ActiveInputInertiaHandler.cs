@@ -8,7 +8,7 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
 {
-    private readonly InteractionTracker _interactionTracker;
+    private readonly ServerInteractionTracker _interactionTracker;
     private readonly AxisHelper _xHelper;
     private readonly AxisHelper _yHelper;
     private readonly AxisHelper _zHelper;
@@ -29,7 +29,7 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
     public ActiveInputInertiaHandler(
         ServerCompositor serverCompositor,
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         Vector3D translationVelocities,
         int requestId
     )

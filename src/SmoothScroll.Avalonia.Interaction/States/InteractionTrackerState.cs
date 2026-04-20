@@ -6,11 +6,11 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 internal abstract class InteractionTrackerState
 {
-    private protected InteractionTracker _interactionTracker;
+    private protected ServerInteractionTracker _interactionTracker;
 
     internal abstract string Name { get; }
 
-    protected InteractionTrackerState(InteractionTracker interactionTracker)
+    protected InteractionTrackerState(ServerInteractionTracker interactionTracker)
     {
         _interactionTracker = interactionTracker;
     }
