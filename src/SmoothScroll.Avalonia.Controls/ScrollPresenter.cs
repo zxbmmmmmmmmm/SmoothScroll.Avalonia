@@ -446,6 +446,9 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         // Otherwise, the visual will be invisible.
         var childVisual = GetCompositionVisual();
         var scale = new Vector3D(_interactionTracker!.Scale, _interactionTracker.Scale, _interactionTracker.Scale);
+
+        // This directly access Server side object from UI thread, which is usually considered not safe
+        // however this should be fine as it is before the composition activated / animations running.
         childVisual!.Server.Scale = scale;
         EnsureScrollAnimation();
     }

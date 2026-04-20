@@ -26,6 +26,7 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
 
     private Stopwatch? _stopwatch;
     private readonly InteractionTracker _interactionTracker;
+    private int _stopRequested;
 
     public Vector3D InitialVelocity { get; set; }
     public Vector3D FinalPosition { get; set; }
@@ -35,7 +36,8 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
         ServerCompositor serverCompositor,
         InteractionTracker interactionTracker,
         Point scaleOrigin,
-        double scaleVelocity)
+        double scaleVelocity
+    )
         : base(serverCompositor)
     {
         _interactionTracker = interactionTracker;
@@ -50,27 +52,48 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
         ScaleVelocity = _initialScaleVelocity = scaleVelocity;
         var finalScale = _initialScale * Math.Exp(scaleVelocity * _timeConstantSeconds);
         FinalModifiedScale = Math.Clamp(finalScale, interactionTracker.MinScale, interactionTracker.MaxScale);
-
     }
 
 
     public double ScaleVelocity { get; private set; }
 
     public double FinalModifiedScale { get; init; }
+
     public void Start()
     {
-        Compositor.Animations.AddToClock(this);
-        _stopwatch = Stopwatch.StartNew();
+        _interactionTracker.RunOnServerThread(_ =>
+        {
+            if (Volatile.Read(ref _stopRequested) != 0)
+            {
+                return;
+            }
+
+            Compositor.Animations.AddToClock(this);
+            _stopwatch = Stopwatch.StartNew();
+        });
     }
 
     public void Stop()
     {
-        Compositor.Animations.RemoveFromClock(this);
-        _stopwatch?.Stop();
+        if (Interlocked.Exchange(ref _stopRequested, 1) != 0)
+        {
+            return;
+        }
+
+        _interactionTracker.RunOnServerThread(_ =>
+        {
+            StopCore();
+        });
     }
 
     public void OnTick()
     {
+        if (Volatile.Read(ref _stopRequested) != 0)
+        {
+            StopCore();
+            return;
+        }
+
         var elapsedSeconds = _stopwatch!.ElapsedMilliseconds / 1000.0;
 
         // Exponential decay: v(t) = v0 * e^(-t/τ); x(t) = x0 + v0 * τ * (1 - e^(-t/τ))
@@ -107,6 +130,7 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
         {
             // clamp position with inertia
 
+            StopCore();
             Dispatcher.UIThread.Post(() =>
             {
                 _interactionTracker.ChangeState(new ActiveInputInertiaState(
@@ -114,7 +138,12 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
                     default,
                     requestId: 0));
             }, priority: DispatcherPriority.Render);
-            Stop();
         }
+    }
+
+    private void StopCore()
+    {
+        Compositor.Animations.RemoveFromClock(this);
+        _stopwatch?.Stop();
     }
 }
