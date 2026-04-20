@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Avalonia;
+using Avalonia.Input;
 using Avalonia.Rendering.Composition;
 using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Rendering.Composition.Server;
@@ -14,6 +15,40 @@ internal partial class ServerInteractionTracker
     private InteractionTrackerState _state;
     private int _count = 0;
 
+    internal void StartUserManipulation(Point position, IPointer pointer)
+    {
+        _state.StartUserManipulation(position, pointer);
+    }
+
+    internal void CompleteUserManipulation()
+    {
+        _state.CompleteUserManipulation();
+    }
+
+    internal void ReceiveManipulationDelta(Point translationDelta)
+    {
+        _state.ReceiveManipulationDelta(-translationDelta);
+    }
+
+    internal void ReceiveInertiaStarting(Point linearVelocity)
+    {
+        _state.ReceiveInertiaStarting(-linearVelocity);
+    }
+
+    internal void ReceiveScaleDelta(Point origin, double delta)
+    {
+        _state.ReceiveScaleDelta(origin, delta);
+    }
+
+    internal void ReceivePointerWheel(double delta, bool isHorizontal)
+    {
+        _state.ReceivePointerWheel(-delta, isHorizontal);
+    }
+
+    internal void ReceiveAnimationStarting(CompositionAnimation animation, Vector3D? centerPoint = null)
+    {
+        _state.ReceiveAnimationStarting(animation, centerPoint);
+    }
 
 
     [Conditional("INTERACTION_TRACKER_TRACE")]
@@ -33,7 +68,6 @@ internal partial class ServerInteractionTracker
     partial void Initialize()
     {
         _scale = 1;
-        _state = new IdleState(this, 0, isInitialIdleState: true);
     }
     public override CompositionProperty? GetCompositionProperty(string name)
     {
@@ -61,6 +95,7 @@ partial class ServerInteractionTracker : ServerObject
     internal ServerInteractionTracker(ServerCompositor compositor) : base(compositor)
     {
         Initialize();
+        _state = new IdleState(this, 0, isInitialIdleState: true);
     }
 
     partial void Initialize();

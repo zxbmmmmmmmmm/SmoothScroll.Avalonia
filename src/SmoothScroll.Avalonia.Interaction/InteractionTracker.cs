@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
+using System.Reflection;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls.Primitives;
@@ -124,7 +125,7 @@ public partial class InteractionTracker : CompositionObject
         }
 
         animation.Target = nameof(Server.Position);
-        _state.ReceiveAnimationStarting(animation);
+        RunOnServerThread(_ => { Server.ReceiveAnimationStarting(animation); });
     }
 
     public void TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
@@ -135,7 +136,8 @@ public partial class InteractionTracker : CompositionObject
         }
 
         animation.Target = nameof(Server.Scale);
-        _state.ReceiveAnimationStarting(animation, centerPoint);
+
+        RunOnServerThread(_ => { Server.ReceiveAnimationStarting( animation, centerPoint); });
     }
 
     internal void SetPosition(Vector3D newPosition, int requestId)
@@ -194,32 +196,32 @@ public partial class InteractionTracker : CompositionObject
 
     internal void StartUserManipulation(Point position, IPointer pointer)
     {
-        _state.StartUserManipulation(position, pointer);
+        RunOnServerThread(_ => { Server.StartUserManipulation(position, pointer); });
     }
 
     internal void CompleteUserManipulation()
     {
-        _state.CompleteUserManipulation();
+        RunOnServerThread(_ => { Server.CompleteUserManipulation(); });
     }
 
     internal void ReceiveManipulationDelta(Point translationDelta)
     {
-        _state.ReceiveManipulationDelta(-translationDelta);
+        RunOnServerThread(_ => { Server.ReceiveManipulationDelta(-translationDelta); });
     }
 
     internal void ReceiveInertiaStarting(Point linearVelocity)
     {
-        _state.ReceiveInertiaStarting(-linearVelocity);
+        RunOnServerThread(_ => { Server.ReceiveInertiaStarting(-linearVelocity); });
     }
 
     internal void ReceiveScaleDelta(Point origin, double delta)
     {
-        _state.ReceiveScaleDelta(origin, delta);
+        RunOnServerThread(_ => { Server.ReceiveScaleDelta(origin, delta); });
     }
 
     internal void ReceivePointerWheel(double delta, bool isHorizontal)
     {
-        _state.ReceivePointerWheel(-delta, isHorizontal);
+        RunOnServerThread(_ => { Server.ReceivePointerWheel(-delta, isHorizontal); });
     }
 
 
@@ -249,8 +251,6 @@ public partial class InteractionTracker : CompositionObject
 
         Compositor.PostServerJob(() => action(Server), false);
     }
-
-    private readonly record struct PositionScaleState(Vector3D Position, double Scale);
 }
 
 public static class CompositorExtensions
