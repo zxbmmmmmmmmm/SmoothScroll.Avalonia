@@ -117,9 +117,7 @@ public partial class InteractionTracker : CompositionObject
         if (MathUtilities.AreClose(currentScale, scale))
             return;
         var id = Interlocked.Increment(ref _requestId);
-        var scaleFactor = scale / currentScale;
-        var adjustedPosition = centerPoint + ((Position - centerPoint) * scaleFactor);
-        SetPositionAndScale(adjustedPosition, scale, id);
+        SetScale(scale, centerPoint, id);
     }
 
     public void TryUpdatePositionWithAnimation(CompositionAnimation animation)
@@ -156,46 +154,33 @@ public partial class InteractionTracker : CompositionObject
         NotifyValuesChanged(newPosition, scale, requestId);
     }
 
-    internal void SetScale(double newScale, int requestId)
+    internal void SetScale(double newScale, Vector3D centerPoint, int requestId)
     {
         if (MathUtilities.AreClose(Scale, newScale))
             return;
 
-        var position = Position;
+        var scaleRatio = newScale / Scale;
+        var currentPosition = Position;
+        var deltaX = (centerPoint.X - (-currentPosition.X)) * (1 - scaleRatio);
+        var deltaY = (centerPoint.Y - (-currentPosition.Y)) * (1 - scaleRatio);
+
+        var scaledNewPosition = new Vector3D(
+            currentPosition.X - deltaX,
+            currentPosition.Y - deltaY,
+            currentPosition.Z);
+
+        Position = scaledNewPosition;
         Scale = newScale;
-        Compositor.Loop.Wakeup();
-        RunOnServerThread((serverTracker) => serverTracker.Scale = newScale);
-        NotifyValuesChanged(position, newScale, requestId);
-    }
-
-    internal void SetPositionAndScale(Vector3D newPosition, double newScale, int requestId)
-    {
-        var positionChanged = Position != newPosition;
-        var scaleChanged = !MathUtilities.AreClose(Scale, newScale);
-        if (positionChanged)
-        {
-            Position = newPosition;
-        }
-
-        if (scaleChanged)
-        {
-            Scale = newScale;
-        }
-
-
-        if (!positionChanged && !scaleChanged)
-        {
-            return;
-        }
-
         Compositor.Loop.Wakeup();
         RunOnServerThread((serverTracker) =>
         {
-            serverTracker.Position = newPosition;
+            serverTracker.Position = scaledNewPosition;
             serverTracker.Scale = newScale;
         });
-        NotifyValuesChanged(newPosition, newScale, requestId);
+
+        NotifyValuesChanged(scaledNewPosition, newScale, requestId);
     }
+
 
     internal void ChangeState(InteractionTrackerState newState)
     {

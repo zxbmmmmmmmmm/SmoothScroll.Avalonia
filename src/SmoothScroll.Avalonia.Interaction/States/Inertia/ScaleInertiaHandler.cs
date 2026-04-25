@@ -17,7 +17,6 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
     private const double MaxDurationSeconds = 1.0;
     private const double Epsilon = 0.0001;
 
-    private readonly Vector3D _initialPosition;
     private readonly double _timeConstantSeconds;
 
     private readonly double _initialScale;
@@ -41,8 +40,6 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
         : base(serverCompositor)
     {
         _interactionTracker = interactionTracker;
-        _initialPosition = _interactionTracker.Position;
-
         _timeConstantSeconds = HalfLifeSeconds / Math.Log(2.0);
 
 
@@ -103,23 +100,12 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
         ScaleVelocity = _initialScaleVelocity * decay;
 
         var scale = _initialScale * Math.Exp(scaleLogDelta);
-        var scaleRatio = scale / _initialScale;
-
-        var currentPosition = _initialPosition;
-        var deltaX = (_scaleOrigin.X - (-currentPosition.X)) * (1 - scaleRatio);
-        var deltaY = (_scaleOrigin.Y - (-currentPosition.Y)) * (1 - scaleRatio);
-
-        var scaledNewPosition = new Vector3D(
-            currentPosition.X - (float)deltaX,
-            currentPosition.Y - (float)deltaY,
-            currentPosition.Z);
-
         var modifiedScale = Math.Clamp(scale, _interactionTracker.MinScale, _interactionTracker.MaxScale);
 
         if (!MathUtilities.AreClose(modifiedScale, _interactionTracker.MinScale)
             && !MathUtilities.AreClose(modifiedScale, _interactionTracker.MaxScale))
         {
-            _interactionTracker.SetPositionAndScale(scaledNewPosition, modifiedScale, 0);
+            _interactionTracker.SetScale(modifiedScale, new(_scaleOrigin.X,_scaleOrigin.Y,0), 0);
         }
 
         var hasStoppedByScaleVelocity = Math.Abs(ScaleVelocity) <= Epsilon;

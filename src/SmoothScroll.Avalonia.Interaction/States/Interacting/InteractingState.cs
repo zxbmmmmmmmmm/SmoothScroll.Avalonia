@@ -47,50 +47,26 @@ internal sealed class InteractingState : InteractionTrackerState
             return;
         }
 
-        var currentPosition = _position;
-
-        // Treat origin movement as translation (e.g. two fingers moving together while pinching).
-        // PinchGestureRecognizer origin is the midpoint of fingers, so delta(origin) is a natural pan signal.
-        if (_previousOrigin != default)
-        {
-            var originDelta = origin - _previousOrigin;
-            if (originDelta != default)
-            {
-                currentPosition = new Vector3D(
-                    currentPosition.X - (float)originDelta.X,
-                    currentPosition.Y - (float)originDelta.Y,
-                    currentPosition.Z);
-            }
-        }
+        var currentPosition = ApplyOriginTranslation(origin, _position, out var positionChanged);
 
         var targetScale = _previousScale * scaleDelta;
         var clampedScale = Math.Clamp(targetScale, _interactionTracker.MinScale, _interactionTracker.MaxScale);
-
         var scaleChanged = Math.Abs(clampedScale - _previousScale) > double.Epsilon;
-        if (scaleChanged)
-        {
-            var scaleRatio = clampedScale / _previousScale;
-
-            // Keep the content under origin stationary while scaling.
-            var deltaX = (origin.X - (-currentPosition.X)) * (1 - scaleRatio);
-            var deltaY = (origin.Y - (-currentPosition.Y)) * (1 - scaleRatio);
-
-            currentPosition = new Vector3D(
-                currentPosition.X - (float)deltaX,
-                currentPosition.Y - (float)deltaY,
-                currentPosition.Z);
-        }
 
         _position = currentPosition;
 
-        currentPosition = GetElasticPoint(_position, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
-
-        _interactionTracker.SetPosition(currentPosition, 0);
+        if (positionChanged)
+        {
+            UpdateTrackerPosition(_position);
+        }
 
         if (scaleChanged)
         {
-            _interactionTracker.SetScale(clampedScale, 0);
-            _previousScale = clampedScale;
+            ApplyScale(origin, clampedScale);
+        }
+        else if (!positionChanged)
+        {
+            UpdateTrackerPosition(_position);
         }
 
         _previousOrigin = origin;
@@ -99,7 +75,47 @@ internal sealed class InteractingState : InteractionTrackerState
     internal override void ReceiveManipulationDelta(Point translationDelta)
     {
         _position += new Vector3D((float)translationDelta.X, (float)translationDelta.Y, 0);
-        var modifiedPosition = GetElasticPoint(_position, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
+        UpdateTrackerPosition(_position);
+    }
+
+    private Vector3D ApplyOriginTranslation(Point origin, Vector3D position, out bool positionChanged)
+    {
+        positionChanged = false;
+
+        if (_previousOrigin == default)
+        {
+            return position;
+        }
+
+        var originDelta = origin - _previousOrigin;
+        if (originDelta == default)
+        {
+            return position;
+        }
+
+        positionChanged = true;
+
+        return new Vector3D(
+            position.X - (float)originDelta.X,
+            position.Y - (float)originDelta.Y,
+            position.Z);
+    }
+
+    private void ApplyScale(Point origin, double scale)
+    {
+        _interactionTracker.SetScale(scale, new Vector3D(origin.X, origin.Y, 0), 0);
+        _previousScale = scale;
+        SyncPositionFromTracker();
+    }
+
+    private void SyncPositionFromTracker()
+    {
+        _position = GetOriginalPoint(_interactionTracker.Position, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
+    }
+
+    private void UpdateTrackerPosition(Vector3D position)
+    {
+        var modifiedPosition = GetElasticPoint(position, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
         _interactionTracker.SetPosition(modifiedPosition, requestId: 0);
     }
 

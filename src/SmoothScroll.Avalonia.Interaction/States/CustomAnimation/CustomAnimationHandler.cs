@@ -73,8 +73,6 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
 internal class ScaleAnimationHandler: CustomAnimationHandler
 {
     private readonly Vector3D _centerPoint;
-    private Vector3D _initialPosition;
-    private double _initialScale;
 
     public ScaleAnimationHandler(
         InteractionTracker interactionTracker,
@@ -88,8 +86,6 @@ internal class ScaleAnimationHandler: CustomAnimationHandler
 
     public override void Start()
     {
-        _initialPosition = InteractionTracker.Position;
-        _initialScale = InteractionTracker.Scale;
         base.Start();
     }
 
@@ -97,23 +93,13 @@ internal class ScaleAnimationHandler: CustomAnimationHandler
     {
         var scale = animationValue.Double;
 
-        var scaleRatio = scale / _initialScale;
-        var currentPosition = _initialPosition;
-        var deltaX = (_centerPoint.X - (-currentPosition.X)) * (1 - scaleRatio);
-        var deltaY = (_centerPoint.Y - (-currentPosition.Y)) * (1 - scaleRatio);
-
-        var scaledNewPosition = new Vector3D(
-            currentPosition.X - deltaX,
-            currentPosition.Y - deltaY,
-            currentPosition.Z);
-
         var modifiedScale = Math.Clamp(scale, InteractionTracker.MinScale, InteractionTracker.MaxScale);
         
 
         if (!MathUtilities.AreClose(modifiedScale, InteractionTracker.MinScale)
             && !MathUtilities.AreClose(modifiedScale, InteractionTracker.MaxScale))
         {
-            InteractionTracker.SetPositionAndScale(scaledNewPosition, modifiedScale, 0);
+            InteractionTracker.SetScale(modifiedScale, _centerPoint , 0);
         }
     }
 }
