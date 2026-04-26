@@ -13,26 +13,25 @@ internal sealed class CustomAnimationState : InteractionTrackerState
     private readonly CustomAnimationHandler _animationHandler;
 
     public CustomAnimationState(
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         CompositionAnimation animation,
         Vector3D? scaleCenterPoint = null) : base(interactionTracker)
     {
-        EnterState(interactionTracker.Owner);
-        if(scaleCenterPoint is null)
+        EnterState();
+        if (scaleCenterPoint is null)
         {
-            _animationHandler = new PositionAnimationHandler(interactionTracker, animation, interactionTracker.Server.Compositor);
+            _animationHandler = new PositionAnimationHandler(interactionTracker, animation, interactionTracker.Compositor);
         }
         else
         {
-            _animationHandler = new ScaleAnimationHandler(interactionTracker, animation, scaleCenterPoint.Value, interactionTracker.Server.Compositor);
+            _animationHandler = new ScaleAnimationHandler(interactionTracker, animation, scaleCenterPoint.Value, interactionTracker.Compositor);
         }
         _animationHandler.Start();
     }
 
-    protected override void EnterState(IInteractionTrackerOwner? owner)
+    protected override void EnterState()
     {
-        // TODO: Args.
-        owner?.CustomAnimationStateEntered(_interactionTracker, new());
+        _interactionTracker.NotifyCustomAnimationStateEntered();
     }
 
     internal override void StartUserManipulation(Point position, IPointer pointer)

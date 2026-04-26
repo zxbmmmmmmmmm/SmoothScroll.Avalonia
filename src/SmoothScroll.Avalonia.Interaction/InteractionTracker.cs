@@ -1,12 +1,7 @@
-﻿using System.Diagnostics;
-using System.Numerics;
-using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Controls.Primitives;
+﻿using Avalonia;
 using Avalonia.Input;
 using Avalonia.Rendering.Composition;
 using Avalonia.Rendering.Composition.Animations;
-using Avalonia.Threading;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -14,17 +9,13 @@ namespace SmoothScroll.Avalonia.Interaction;
 public partial class InteractionTracker : CompositionObject
 {
     private int _requestId = 0;
-    private int _count = 0;
-
-    private InteractionTrackerState _state;
 
     internal new ServerInteractionTracker Server { get; }
 
     internal InteractionTracker(Compositor compositor, ServerInteractionTracker server) : base(compositor, server)
     {
         Server = server;
-        RunOnServerThread(static serverTracker => serverTracker.Activate());
-        _state = new IdleState(this, 0, isInitialIdleState: true);
+        RunOnServerThread(serverTracker => serverTracker.AttachClient(this));
     }
 
 
@@ -40,7 +31,7 @@ public partial class InteractionTracker : CompositionObject
 
             field = value;
             Compositor.Loop.Wakeup();
-            RunOnServerThread((serverTracker) => serverTracker.MinScale = value);
+            RunOnServerThread(serverTracker => serverTracker.MinScale = value);
         }
     } = 1.0;
 
@@ -54,7 +45,7 @@ public partial class InteractionTracker : CompositionObject
 
             field = value;
             Compositor.Loop.Wakeup();
-            RunOnServerThread((serverTracker) => serverTracker.MaxScale = value);
+            RunOnServerThread(serverTracker => serverTracker.MaxScale = value);
         }
     } = 1.0;
 
@@ -69,8 +60,7 @@ public partial class InteractionTracker : CompositionObject
 
             field = value;
             Compositor.Loop.Wakeup();
-            RunOnServerThread((serverTracker) => serverTracker.MinPosition = value);
-            _state.ReceiveBoundsUpdate();
+            RunOnServerThread(serverTracker => serverTracker.UpdateMinPosition(value));
         }
     }
 
@@ -84,12 +74,23 @@ public partial class InteractionTracker : CompositionObject
 
             field = value;
             Compositor.Loop.Wakeup();
-            RunOnServerThread((serverTracker) => serverTracker.MaxPosition = value);
-            _state.ReceiveBoundsUpdate();
+            RunOnServerThread(serverTracker => serverTracker.UpdateMaxPosition(value));
         }
     }
 
-    public Vector3D? PositionInertiaDecayRate { get; set; }
+    public Vector3D? PositionInertiaDecayRate
+    {
+        get;
+        set
+        {
+            if (field == value)
+                return;
+
+            field = value;
+            Compositor.Loop.Wakeup();
+            RunOnServerThread(serverTracker => serverTracker.PositionInertiaDecayRate = value);
+        }
+    }
 
     public Vector3D Position { get; private set; }
 
@@ -104,7 +105,8 @@ public partial class InteractionTracker : CompositionObject
     public int TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option)
     {
         var id = Interlocked.Increment(ref _requestId);
-        _state.TryUpdatePosition(value, option, id);
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(serverTracker => serverTracker.TryUpdatePosition(value, option, id));
         return id;
     }
 
@@ -116,8 +118,10 @@ public partial class InteractionTracker : CompositionObject
         var currentScale = Scale;
         if (MathUtilities.AreClose(currentScale, scale))
             return;
+
         var id = Interlocked.Increment(ref _requestId);
-        SetScale(scale, centerPoint, id);
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(serverTracker => serverTracker.TryUpdateScale(scale, centerPoint, id));
     }
 
     public void TryUpdatePositionWithAnimation(CompositionAnimation animation)
@@ -128,7 +132,8 @@ public partial class InteractionTracker : CompositionObject
         }
 
         animation.Target = nameof(Server.Position);
-        _state.ReceiveAnimationStarting(animation);
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(serverTracker => serverTracker.ReceiveAnimationStarting(animation));
     }
 
     public void TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
@@ -139,108 +144,97 @@ public partial class InteractionTracker : CompositionObject
         }
 
         animation.Target = nameof(Server.Scale);
-        _state.ReceiveAnimationStarting(animation, centerPoint);
-    }
-
-    internal void SetPosition(Vector3D newPosition, int requestId)
-    {
-        if (Position == newPosition)
-            return;
-
-        Position = newPosition;
-        var scale = Scale;
         Compositor.Loop.Wakeup();
-        RunOnServerThread((serverTracker) => serverTracker.Position = newPosition);
-        NotifyValuesChanged(newPosition, scale, requestId);
-    }
-
-    internal void SetScale(double newScale, Vector3D centerPoint, int requestId)
-    {
-        if (MathUtilities.AreClose(Scale, newScale))
-            return;
-
-        var scaleRatio = newScale / Scale;
-        var currentPosition = Position;
-        var deltaX = (centerPoint.X - (-currentPosition.X)) * (1 - scaleRatio);
-        var deltaY = (centerPoint.Y - (-currentPosition.Y)) * (1 - scaleRatio);
-
-        var scaledNewPosition = new Vector3D(
-            currentPosition.X - deltaX,
-            currentPosition.Y - deltaY,
-            currentPosition.Z);
-
-        Position = scaledNewPosition;
-        Scale = newScale;
-        Compositor.Loop.Wakeup();
-        RunOnServerThread((serverTracker) =>
-        {
-            serverTracker.Position = scaledNewPosition;
-            serverTracker.Scale = newScale;
-        });
-
-        NotifyValuesChanged(scaledNewPosition, newScale, requestId);
-    }
-
-
-    internal void ChangeState(InteractionTrackerState newState)
-    {
-        Interlocked.Increment(ref _count);
-        WriteStateTransition(_count, _state.Name, newState.Name);
-        _state = newState;
+        RunOnServerThread(serverTracker => serverTracker.ReceiveAnimationStarting(animation, centerPoint));
     }
 
 
     internal void StartUserManipulation(Point position, IPointer pointer)
     {
-        _state.StartUserManipulation(position, pointer);
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(serverTracker => serverTracker.StartUserManipulation(position, pointer));
     }
 
     internal void CompleteUserManipulation()
     {
-        _state.CompleteUserManipulation();
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(static serverTracker => serverTracker.CompleteUserManipulation());
     }
 
     internal void ReceiveManipulationDelta(Point translationDelta)
     {
-        _state.ReceiveManipulationDelta(-translationDelta);
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(serverTracker => serverTracker.ReceiveManipulationDelta(-translationDelta));
     }
 
     internal void ReceiveInertiaStarting(Point linearVelocity)
     {
-        _state.ReceiveInertiaStarting(-linearVelocity);
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(serverTracker => serverTracker.ReceiveInertiaStarting(-linearVelocity));
     }
 
     internal void ReceiveScaleDelta(Point origin, double delta)
     {
-        _state.ReceiveScaleDelta(origin, delta);
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(serverTracker => serverTracker.ReceiveScaleDelta(origin, delta));
     }
 
     internal void ReceivePointerWheel(double delta, bool isHorizontal)
     {
-        _state.ReceivePointerWheel(-delta, isHorizontal);
+        Compositor.Loop.Wakeup();
+        RunOnServerThread(serverTracker => serverTracker.ReceivePointerWheel(-delta, isHorizontal));
     }
 
-
-    [Conditional("INTERACTION_TRACKER_TRACE")]
-    private static void WriteStateTransition(int count, string previousState, string newState)
+    internal void RaiseValuesChanged(Vector3D position, double scale, int requestId)
     {
-        Debug.WriteLine($"{count}:{previousState} -> {newState}");
+        Position = position;
+        Scale = scale;
+        Owner?.ValuesChanged(this, new InteractionTrackerValuesChangedArgs(position, scale, requestId));
     }
 
-    private void NotifyValuesChanged(Vector3D position, double scale, int requestId)
+    internal void RaiseRequestIgnored(int requestId)
     {
-        if (Dispatcher.UIThread.CheckAccess())
+        Owner?.RequestIgnored(this, new InteractionTrackerRequestIgnoredArgs(requestId));
+    }
+
+    internal void RaiseIdleStateEntered(int requestId, bool isFromBinding)
+    {
+        Owner?.IdleStateEntered(this, new InteractionTrackerIdleStateEnteredArgs(requestId, isFromBinding));
+    }
+
+    internal void RaiseInteractingStateEntered(int requestId, bool isFromBinding)
+    {
+        Owner?.InteractingStateEntered(this, new InteractionTrackerInteractingStateEnteredArgs(requestId, isFromBinding));
+    }
+
+    internal void RaiseCustomAnimationStateEntered()
+    {
+        Owner?.CustomAnimationStateEntered(this, new InteractionTrackerCustomAnimationStateEnteredArgs());
+    }
+
+    internal void RaiseInertiaStateEntered(
+        Vector3D? modifiedRestingPosition,
+        double? modifiedRestingScale,
+        Vector3D naturalRestingPosition,
+        double naturalRestingScale,
+        Vector3D positionVelocityInPixelsPerSecond,
+        int requestId,
+        float scaleVelocityInPercentPerSecond,
+        bool isInertiaFromImpulse,
+        bool isFromBinding)
+    {
+        Owner?.InertiaStateEntered(this, new InteractionTrackerInertiaStateEnteredArgs()
         {
-            RaiseValuesChanged();
-            return;
-        }
-
-        Dispatcher.UIThread.Post(RaiseValuesChanged, DispatcherPriority.Render);
-
-        return;
-
-        void RaiseValuesChanged()
-            => Owner?.ValuesChanged(this, new InteractionTrackerValuesChangedArgs(position, scale, requestId));
+            ModifiedRestingPosition = modifiedRestingPosition,
+            ModifiedRestingScale = modifiedRestingScale,
+            NaturalRestingPosition = naturalRestingPosition,
+            NaturalRestingScale = naturalRestingScale,
+            PositionVelocityInPixelsPerSecond = positionVelocityInPixelsPerSecond,
+            RequestId = requestId,
+            ScaleVelocityInPercentPerSecond = scaleVelocityInPercentPerSecond,
+            IsInertiaFromImpulse = isInertiaFromImpulse,
+            IsFromBinding = isFromBinding,
+        });
     }
 
     internal void RunOnServerThread(Action<ServerInteractionTracker> action)
@@ -253,8 +247,6 @@ public partial class InteractionTracker : CompositionObject
 
         Compositor.PostServerJob(() => action(Server), false);
     }
-
-    private readonly record struct PositionScaleState(Vector3D Position, double Scale);
 }
 
 public static class CompositorExtensions

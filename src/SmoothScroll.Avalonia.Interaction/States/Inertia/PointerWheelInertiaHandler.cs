@@ -22,12 +22,12 @@ internal class PointerWheelInertiaHandler : ServerObject, IServerClockItem, IInt
     private readonly double _timeConstantSeconds;
 
     private Stopwatch? _stopwatch;
-    private readonly InteractionTracker _interactionTracker;
+    private readonly ServerInteractionTracker _interactionTracker;
     private int _stopRequested;
 
     public PointerWheelInertiaHandler(
         ServerCompositor serverCompositor,
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         Vector3D translationVelocities
     )
         : base(serverCompositor)
@@ -56,16 +56,13 @@ internal class PointerWheelInertiaHandler : ServerObject, IServerClockItem, IInt
 
     public void Start()
     {
-        _interactionTracker.RunOnServerThread(_ =>
+        if (Volatile.Read(ref _stopRequested) != 0)
         {
-            if (Volatile.Read(ref _stopRequested) != 0)
-            {
-                return;
-            }
+            return;
+        }
 
-            Compositor.Animations.AddToClock(this);
-            _stopwatch = Stopwatch.StartNew();
-        });
+        Compositor.Animations.AddToClock(this);
+        _stopwatch = Stopwatch.StartNew();
     }
 
     public void Stop()
@@ -75,10 +72,7 @@ internal class PointerWheelInertiaHandler : ServerObject, IServerClockItem, IInt
             return;
         }
 
-        _interactionTracker.RunOnServerThread(_ =>
-        {
-            StopCore();
-        });
+        StopCore();
     }
 
     public void OnTick()

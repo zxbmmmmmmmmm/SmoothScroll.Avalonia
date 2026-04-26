@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Rendering.Composition.Server;
 using Avalonia.Utilities;
@@ -8,13 +7,13 @@ namespace SmoothScroll.Avalonia.Interaction;
 
 internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerClockItem, IInteractionTrackerInertiaHandler
 {
-    private readonly InteractionTracker _interactionTracker;
+    private readonly ServerInteractionTracker _interactionTracker;
     private readonly AxisHelper _xHelper;
     private readonly AxisHelper _yHelper;
     private readonly AxisHelper _zHelper;
 
     private Stopwatch? _stopwatch;
-    private readonly int _requestId = 0;
+    private readonly int _requestId;
     private int _stopRequested;
 
     // InteractionTracker works at 60 FPS, per documentation
@@ -29,13 +28,14 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
     public ActiveInputInertiaHandler(
         ServerCompositor serverCompositor,
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         Vector3D translationVelocities,
         int requestId
     )
         : base(serverCompositor)
     {
         _interactionTracker = interactionTracker;
+        _requestId = requestId;
         _xHelper = new AxisHelper(this, translationVelocities, Axis.X);
         _yHelper = new AxisHelper(this, translationVelocities, Axis.Y);
         _zHelper = new AxisHelper(this, translationVelocities, Axis.Z);
@@ -43,16 +43,13 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
 
     public void Start()
     {
-        _interactionTracker.RunOnServerThread(_ =>
+        if (Volatile.Read(ref _stopRequested) != 0)
         {
-            if (Volatile.Read(ref _stopRequested) != 0)
-            {
-                return;
-            }
+            return;
+        }
 
-            Compositor.Animations.AddToClock(this);
-            _stopwatch = Stopwatch.StartNew();
-        });
+        Compositor.Animations.AddToClock(this);
+        _stopwatch = Stopwatch.StartNew();
     }
 
     public void Stop()
@@ -62,10 +59,7 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
             return;
         }
 
-        _interactionTracker.RunOnServerThread(_ =>
-        {
-            StopCore();
-        });
+        StopCore();
     }
 
     public void ReceiveBoundsUpdate()
