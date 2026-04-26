@@ -12,9 +12,21 @@ public partial class InteractionTracker : CompositionObject
 
     internal new ServerInteractionTracker Server { get; }
 
-    internal InteractionTracker(Compositor compositor, ServerInteractionTracker server) : base(compositor, server)
+    internal InteractionTracker(Compositor compositor, ServerInteractionTracker server)
+        : this(compositor, server, default, 1.0)
+    {
+    }
+
+    internal InteractionTracker(
+        Compositor compositor,
+        ServerInteractionTracker server,
+        Vector3D initialPosition,
+        double initialScale) : base(compositor, server)
     {
         Server = server;
+        Position = initialPosition;
+        Scale = initialScale;
+        server.InitializeValues(initialPosition, initialScale);
         RunOnServerThread(serverTracker => serverTracker.AttachClient(this));
     }
 
@@ -255,6 +267,15 @@ public static class CompositorExtensions
     {
         public InteractionTracker CreateInteractionTracker(IInteractionTrackerOwner? owner) =>
             new(compositor, new ServerInteractionTracker(compositor.Server))
+            {
+                Owner = owner
+            };
+
+        public InteractionTracker CreateInteractionTracker(
+            IInteractionTrackerOwner? owner,
+            Vector3D initialPosition,
+            double initialScale) =>
+            new(compositor, new ServerInteractionTracker(compositor.Server), initialPosition, initialScale)
             {
                 Owner = owner
             };

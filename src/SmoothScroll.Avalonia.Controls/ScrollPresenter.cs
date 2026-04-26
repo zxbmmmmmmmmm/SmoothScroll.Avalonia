@@ -139,6 +139,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     private readonly DispatcherTimer _arrangeTimer;
     private bool _hasPendingArrange;
     private long _lastScrollActivityTick;
+    private bool _synchronizingOwnerOffset;
     /// <summary>
     /// Initializes static members of the <see cref="ScrollPresenter"/> class.
     /// </summary>
@@ -456,52 +457,30 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     private void InitializeInteractionTracker()
     {
         var compositionVisual = GetCompositionVisual();
-        _interactionTracker = compositionVisual!.Compositor.CreateInteractionTracker(this);
+        var scrollableArea = CalculateScrollableArea(ZoomFactor);
+        var initialPosition = Vector3D.Clamp(
+            new Vector3D(Offset.X, Offset.Y, 0),
+            new Vector3D(scrollableArea.MinPosition.X, scrollableArea.MinPosition.Y, 0),
+            new Vector3D(scrollableArea.MaxPosition.X, scrollableArea.MaxPosition.Y, 0));
+
+        _interactionTracker = compositionVisual!.Compositor.CreateInteractionTracker(this, initialPosition, ZoomFactor);
         _interactionTracker.MinScale = MinZoomFactor;
         _interactionTracker.MaxScale = MaxZoomFactor;
         _interactionSource = new InputElementInteractionSource(this, _interactionTracker);
+
         try
         {
             _compositionUpdate = true;
-            var targetPosition = new Vector3D(Offset.X, Offset.Y, 0);
-            var currentScale = _interactionTracker.Scale;
-
-            if (MathUtilities.AreClose(currentScale, ZoomFactor))
-            {
-                _interactionTracker.TryUpdatePosition(targetPosition, InteractionTrackerClampingOption.Disabled);
-            }
-            else
-            {
-                var currentPosition = _interactionTracker.Position;
-                var centerPoint = ConvertOffsetToCenterPoint(currentPosition, currentScale, targetPosition, ZoomFactor);
-                _interactionTracker.TryUpdateScale(ZoomFactor, centerPoint);
-            }
+            _scaleChanged = !MathUtilities.AreClose(ZoomFactor, 1.0);
+            ApplyScrollableArea(scrollableArea);
         }
         finally
         {
             _compositionUpdate = false;
+            _scaleChanged = false;
         }
+
         UpdateInteractionOptions();
-    }
-
-    private static Vector3D ConvertOffsetToCenterPoint(
-        Vector3D currentPosition,
-        double currentScale,
-        Vector3D targetPosition,
-        double targetScale)
-    {
-        var scaleFactor = targetScale / currentScale;
-        var denominator = 1.0 - scaleFactor;
-
-        if (MathUtilities.IsZero(denominator))
-        {
-            return default;
-        }
-
-        var centerX = ((currentPosition.X * scaleFactor) - targetPosition.X) / denominator;
-        var centerY = ((currentPosition.Y * scaleFactor) - targetPosition.Y) / denominator;
-
-        return new Vector3D(centerX, centerY, 0);
     }
 
     /// <summary>
@@ -702,64 +681,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         return finalSize;
     }
 
-    public new Size ArrangeOverrideImpl(Size finalSize, Vector offset)
-    {
-        if (this.Child == null)
-            return finalSize;
-        bool useLayoutRounding = this.UseLayoutRounding;
-        double layoutScale = LayoutHelper.GetLayoutScale((Layoutable)this);
-        Thickness thickness1 = this.Padding;
-        Thickness thickness2 = this.BorderThickness;
-        if (useLayoutRounding)
-        {
-            thickness1 = LayoutHelper.RoundLayoutThickness(thickness1, layoutScale);
-            thickness2 = LayoutHelper.RoundLayoutThickness(thickness2, layoutScale);
-        }
-        Thickness thickness3 = thickness1 + thickness2;
-        HorizontalAlignment contentAlignment1 = this.HorizontalContentAlignment;
-        VerticalAlignment contentAlignment2 = this.VerticalContentAlignment;
-        Size size1 = finalSize;
-        Size size2 = size1;
-        double x = offset.X;
-        double y = offset.Y;
-        if (contentAlignment1 != HorizontalAlignment.Stretch)
-            size2 = size2.WithWidth(Math.Min(size2.Width, this.DesiredSize.Width));
-        if (contentAlignment2 != VerticalAlignment.Stretch)
-            size2 = size2.WithHeight(Math.Min(size2.Height, this.DesiredSize.Height));
-        if (useLayoutRounding)
-        {
-            size2 = LayoutHelper.RoundLayoutSizeUp(size2, layoutScale);
-            size1 = LayoutHelper.RoundLayoutSizeUp(size1, layoutScale);
-        }
-        if (!IsZoomEnabled || Child.PreviousArrange is null)
-        {
-            switch (contentAlignment1)
-            {
-                case HorizontalAlignment.Center:
-                    x += (size1.Width - size2.Width) / 2.0;
-                    break;
-                case HorizontalAlignment.Right:
-                    x += size1.Width - size2.Width;
-                    break;
-            }
-            switch (contentAlignment2)
-            {
-                case VerticalAlignment.Center:
-                    y += (size1.Height - size2.Height) / 2.0;
-                    break;
-                case VerticalAlignment.Bottom:
-                    y += size1.Height - size2.Height;
-                    break;
-            }
-        }
-
-        Point point = new Point(x, y);
-        if (useLayoutRounding)
-            point = LayoutHelper.RoundLayoutPoint(point, layoutScale);
-        this.Child.Arrange(new Rect(point, size2).Deflate(thickness3));
-        return finalSize;
-    }
-
     private void RequestArrangeOnScroll()
     {
         _hasPendingArrange = true;
@@ -795,6 +716,29 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
     }
 
+    private void SyncOwnerOffset(Vector offset)
+    {
+        if (_owner is null || _synchronizingOwnerOffset)
+        {
+            return;
+        }
+
+        if (_owner.Offset.NearlyEquals(offset))
+        {
+            return;
+        }
+
+        try
+        {
+            _synchronizingOwnerOffset = true;
+            _owner.SetCurrentValue(ScrollViewer.OffsetProperty, offset);
+        }
+        finally
+        {
+            _synchronizingOwnerOffset = false;
+        }
+    }
+
 
     partial void OnPropertyChangedOverride(AvaloniaPropertyChangedEventArgs change)
     {
@@ -822,7 +766,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
                 requestId = null;
             }
 
-            _owner?.SetCurrentValue(OffsetProperty, change.GetNewValue<Vector>());
+            SyncOwnerOffset(change.GetNewValue<Vector>());
         }
         else if (change.Property == ChildProperty)
         {
@@ -1273,6 +1217,39 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             return;
         }
 
+        ApplyScrollableArea(CalculateScrollableArea(scale));
+    }
+
+    private void ApplyScrollableArea((Size ScaledExtent, Vector MinPosition, Vector MaxPosition) scrollableArea)
+    {
+        if (_interactionTracker == null || _interactionSource == null)
+        {
+            return;
+        }
+
+        Extent = scrollableArea.ScaledExtent;
+
+        _interactionTracker.MinPosition = new Vector3D(scrollableArea.MinPosition.X, scrollableArea.MinPosition.Y, 0);
+        _interactionTracker.MaxPosition = new Vector3D(scrollableArea.MaxPosition.X, scrollableArea.MaxPosition.Y, 0);
+
+        var range = scrollableArea.MaxPosition - scrollableArea.MinPosition;
+
+        _interactionSource.PositionXSourceMode = MathUtilities.IsZero(range.X) && !CanHorizontallyScroll
+            ? InteractionSourceMode.Disabled
+            : InteractionSourceMode.EnabledWithInertia;
+
+        _interactionSource.PositionYSourceMode = MathUtilities.IsZero(range.Y) && !CanVerticallyScroll
+            ? InteractionSourceMode.Disabled
+            : InteractionSourceMode.EnabledWithInertia;
+    }
+
+    private (Size ScaledExtent, Vector MinPosition, Vector MaxPosition) CalculateScrollableArea(double scale)
+    {
+        if (Child == null)
+        {
+            return (default, default, default);
+        }
+
         var childMargin = Child.Margin + Padding;
         if (Child.UseLayoutRounding)
         {
@@ -1283,23 +1260,10 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         var baseExtent = Child.Bounds.Size.Inflate(childMargin);
         var scaledExtent = new Size(baseExtent.Width * scale, baseExtent.Height * scale);
 
-        Extent = scaledExtent;
-
         var minPosition = ComputeMinPositionForAlignment(baseExtent, scale);
         var maxPosition = ComputeMaxPositionForAlignment(baseExtent, scale);
 
-        _interactionTracker.MinPosition = new Vector3D(minPosition.X, minPosition.Y, 0);
-        _interactionTracker.MaxPosition = new Vector3D(maxPosition.X, maxPosition.Y, 0);
-
-        var range = maxPosition - minPosition;
-
-        _interactionSource.PositionXSourceMode = MathUtilities.IsZero(range.X) && !CanHorizontallyScroll
-            ? InteractionSourceMode.Disabled
-            : InteractionSourceMode.EnabledWithInertia;
-
-        _interactionSource.PositionYSourceMode = MathUtilities.IsZero(range.Y) && !CanVerticallyScroll
-            ? InteractionSourceMode.Disabled
-            : InteractionSourceMode.EnabledWithInertia;
+        return (scaledExtent, minPosition, maxPosition);
     }
     private Vector ComputeMinPositionForAlignment(Size unscaledExtent, double scale)
     {

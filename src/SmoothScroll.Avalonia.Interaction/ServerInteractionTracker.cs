@@ -23,6 +23,12 @@ internal partial class ServerInteractionTracker
         _scale = 1;
     }
 
+    internal void InitializeValues(Vector3D position, double scale)
+    {
+        _position = position;
+        _scale = scale;
+    }
+
     public void AttachClient(InteractionTracker client)
     {
         _client = client;

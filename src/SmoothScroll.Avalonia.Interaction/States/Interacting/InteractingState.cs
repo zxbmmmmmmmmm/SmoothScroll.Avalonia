@@ -143,6 +143,7 @@ internal sealed class InteractingState : InteractionTrackerState
 
     internal override void ReceiveBoundsUpdate()
     {
+        SyncPositionFromTracker();
     }
 
     public static Vector3D GetElasticPoint(Vector3D current, Vector3D min, Vector3D max, double tension = Tension)
@@ -229,14 +230,14 @@ internal sealed class InteractingState : InteractionTrackerState
 
         return new Vector3D(originX, originY, originZ);
     }
-    
+
     private static double CalculateInverseOffset(double resultOffset, double tension)
     {
         double limit = ReferenceRange * tension;
 
         if (resultOffset >= limit)
         {
-            return double.MaxValue; 
+            return double.MaxValue;
         }
         return (resultOffset * ReferenceRange) / (limit - resultOffset);
     }
