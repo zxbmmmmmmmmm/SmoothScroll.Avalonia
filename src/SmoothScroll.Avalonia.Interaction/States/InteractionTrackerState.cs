@@ -1,22 +1,21 @@
 ﻿using Avalonia;
-using Avalonia.Input;
 using Avalonia.Rendering.Composition.Animations;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
 internal abstract class InteractionTrackerState
 {
-    private protected InteractionTracker _interactionTracker;
+    private protected ServerInteractionTracker _interactionTracker;
 
     internal abstract string Name { get; }
 
-    protected InteractionTrackerState(InteractionTracker interactionTracker)
+    protected InteractionTrackerState(ServerInteractionTracker interactionTracker)
     {
         _interactionTracker = interactionTracker;
     }
 
-    protected abstract void EnterState(IInteractionTrackerOwner? owner);
-    internal abstract void StartUserManipulation(Point position, IPointer pointer);
+    protected abstract void EnterState();
+    internal abstract void StartUserManipulation(Point position);
     internal abstract void CompleteUserManipulation();
     internal abstract void ReceiveScaleDelta(Point origin, double delta);
     internal abstract void ReceiveManipulationDelta(Point translationDelta);

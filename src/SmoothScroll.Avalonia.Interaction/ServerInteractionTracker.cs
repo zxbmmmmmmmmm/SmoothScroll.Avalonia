@@ -4,17 +4,21 @@ using Avalonia.Rendering.Composition;
 using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Rendering.Composition.Server;
 using Avalonia.Rendering.Composition.Transport;
-using Avalonia.Styling;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
 internal partial class ServerInteractionTracker
 {
+    private IInteractionTrackerNotifications? _notifications;
+    private int _count;
+    private InteractionTrackerState _state = null!;
+
     partial void Initialize()
     {
         _scale = 1;
     }
+
     public override CompositionProperty? GetCompositionProperty(string name)
     {
         if (name == "Position")
@@ -37,6 +41,175 @@ internal partial class ServerInteractionTracker
         var instance = animation.CreateInstance(this, null);
         GetOrCreateAnimations().OnSetAnimatedValue(s_IdOfPositionProperty,
             ref _position, Compositor.Clock.Elapsed, instance);
+    }
+
+    internal Vector3D? PositionInertiaDecayRate { get; set; }
+
+    internal void InitializeTracker(IInteractionTrackerNotifications notifications)
+    {
+        Activate();
+        _state = new IdleState(this, 0, isInitialIdleState: true);
+        _notifications = notifications;
+    }
+
+    internal void UpdateMinScale(double value)
+    {
+        if (MathUtilities.AreClose(MinScale, value))
+            return;
+
+        MinScale = value;
+    }
+
+    internal void UpdateMaxScale(double value)
+    {
+        if (MathUtilities.AreClose(MaxScale, value))
+            return;
+
+        MaxScale = value;
+    }
+
+    internal void UpdateMinPosition(Vector3D value)
+    {
+        if (MinPosition == value)
+            return;
+
+        MinPosition = value;
+        _state.ReceiveBoundsUpdate();
+    }
+
+    internal void UpdateMaxPosition(Vector3D value)
+    {
+        if (MaxPosition == value)
+            return;
+
+        MaxPosition = value;
+        _state.ReceiveBoundsUpdate();
+    }
+
+    internal void TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option, int requestId)
+    {
+        _state.TryUpdatePosition(value, option, requestId);
+    }
+
+    internal void TryUpdateScale(double scale, Vector3D centerPoint, int requestId)
+    {
+        if (MathUtilities.AreClose(Scale, scale))
+            return;
+
+        SetScale(scale, centerPoint, requestId);
+    }
+
+    internal void TryUpdatePositionWithAnimation(CompositionAnimation animation)
+    {
+        _state.ReceiveAnimationStarting(animation);
+    }
+
+    internal void TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
+    {
+        _state.ReceiveAnimationStarting(animation, centerPoint);
+    }
+
+    internal void SetPosition(Vector3D newPosition, int requestId)
+    {
+        if (Position == newPosition)
+            return;
+
+        Position = newPosition;
+        NotifyValuesChanged(newPosition, Scale, requestId);
+    }
+
+    internal void SetScale(double newScale, Vector3D centerPoint, int requestId)
+    {
+        if (MathUtilities.AreClose(Scale, newScale))
+            return;
+
+        var scaleRatio = newScale / Scale;
+        var currentPosition = Position;
+        var deltaX = (centerPoint.X - (-currentPosition.X)) * (1 - scaleRatio);
+        var deltaY = (centerPoint.Y - (-currentPosition.Y)) * (1 - scaleRatio);
+
+        var scaledNewPosition = new Vector3D(
+            currentPosition.X - deltaX,
+            currentPosition.Y - deltaY,
+            currentPosition.Z);
+
+        Position = scaledNewPosition;
+        Scale = newScale;
+
+        NotifyValuesChanged(scaledNewPosition, newScale, requestId);
+    }
+
+    internal void ChangeState(InteractionTrackerState newState)
+    {
+        Interlocked.Increment(ref _count);
+        WriteStateTransition(_count, _state.Name, newState.Name);
+        _state = newState;
+    }
+
+    internal void StartUserManipulation(Point position)
+    {
+        _state.StartUserManipulation(position);
+    }
+
+    internal void CompleteUserManipulation()
+    {
+        _state.CompleteUserManipulation();
+    }
+
+    internal void ReceiveManipulationDelta(Point translationDelta)
+    {
+        _state.ReceiveManipulationDelta(translationDelta);
+    }
+
+    internal void ReceiveInertiaStarting(Point linearVelocity)
+    {
+        _state.ReceiveInertiaStarting(linearVelocity);
+    }
+
+    internal void ReceiveScaleDelta(Point origin, double delta)
+    {
+        _state.ReceiveScaleDelta(origin, delta);
+    }
+
+    internal void ReceivePointerWheel(double delta, bool isHorizontal)
+    {
+        _state.ReceivePointerWheel(delta, isHorizontal);
+    }
+
+    internal void NotifyCustomAnimationStateEntered()
+    {
+        _notifications?.NotifyCustomAnimationStateEnteredFromServer();
+    }
+
+    internal void NotifyIdleStateEntered(int requestId, bool isFromBinding)
+    {
+        _notifications?.NotifyIdleStateEnteredFromServer(requestId, isFromBinding);
+    }
+
+    internal void NotifyInertiaStateEntered(InteractionTrackerInertiaStateEnteredArgs args)
+    {
+        _notifications?.NotifyInertiaStateEnteredFromServer(args);
+    }
+
+    internal void NotifyInteractingStateEntered(int requestId, bool isFromBinding)
+    {
+        _notifications?.NotifyInteractingStateEnteredFromServer(requestId, isFromBinding);
+    }
+
+    internal void NotifyRequestIgnored(int requestId)
+    {
+        _notifications?.NotifyRequestIgnoredFromServer(requestId);
+    }
+
+    private void NotifyValuesChanged(Vector3D position, double scale, int requestId)
+    {
+        _notifications?.NotifyValuesChangedFromServer(position, scale, requestId);
+    }
+
+    [Conditional("INTERACTION_TRACKER_TRACE")]
+    private static void WriteStateTransition(int count, string previousState, string newState)
+    {
+        Debug.WriteLine($"{count}:{previousState} -> {newState}");
     }
 }
 

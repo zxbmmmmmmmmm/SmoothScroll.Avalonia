@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using Avalonia;
 using Avalonia.Rendering.Composition.Server;
-using Avalonia.Threading;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -24,7 +23,7 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
     private readonly Point _scaleOrigin;
 
     private Stopwatch? _stopwatch;
-    private readonly InteractionTracker _interactionTracker;
+    private readonly ServerInteractionTracker _interactionTracker;
     private int _stopRequested;
 
     public Vector3D InitialVelocity { get; set; }
@@ -32,12 +31,11 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
     public Vector3D FinalModifiedPosition { get; set; }
 
     public ScaleInertiaHandler(
-        ServerCompositor serverCompositor,
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         Point scaleOrigin,
         double scaleVelocity
     )
-        : base(serverCompositor)
+        : base(interactionTracker.Compositor)
     {
         _interactionTracker = interactionTracker;
         _timeConstantSeconds = HalfLifeSeconds / Math.Log(2.0);
@@ -58,16 +56,13 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
 
     public void Start()
     {
-        _interactionTracker.RunOnServerThread(_ =>
+        if (Volatile.Read(ref _stopRequested) != 0)
         {
-            if (Volatile.Read(ref _stopRequested) != 0)
-            {
-                return;
-            }
+            return;
+        }
 
-            Compositor.Animations.AddToClock(this);
-            _stopwatch = Stopwatch.StartNew();
-        });
+        Compositor.Animations.AddToClock(this);
+        _stopwatch = Stopwatch.StartNew();
     }
 
     public void Stop()
@@ -77,10 +72,7 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
             return;
         }
 
-        _interactionTracker.RunOnServerThread(_ =>
-        {
-            StopCore();
-        });
+        StopCore();
     }
 
     public void OnTick()
@@ -117,13 +109,10 @@ internal class ScaleInertiaHandler : ServerObject, IInteractionTrackerInertiaHan
             // clamp position with inertia
 
             StopCore();
-            Dispatcher.UIThread.Post(() =>
-            {
-                _interactionTracker.ChangeState(new ActiveInputInertiaState(
-                    _interactionTracker,
-                    default,
-                    requestId: 0));
-            }, priority: DispatcherPriority.Render);
+            _interactionTracker.ChangeState(new ActiveInputInertiaState(
+                _interactionTracker,
+                default,
+                requestId: 0));
         }
     }
 

@@ -1,5 +1,4 @@
 ﻿using Avalonia;
-using Avalonia.Input;
 using Avalonia.Rendering.Composition.Animations;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -11,22 +10,22 @@ internal sealed class IdleState : InteractionTrackerState
 
     internal override string Name => "IdleState";
 
-    public IdleState(InteractionTracker interactionTracker, int requestId, bool isInitialIdleState = false) : base(interactionTracker)
+    public IdleState(ServerInteractionTracker interactionTracker, int requestId, bool isInitialIdleState = false) : base(interactionTracker)
     {
         _requestId = requestId;
         _isInitialIdleState = isInitialIdleState;
-        EnterState(interactionTracker.Owner);
+        EnterState();
     }
 
-    protected override void EnterState(IInteractionTrackerOwner? owner)
+    protected override void EnterState()
     {
         if (!_isInitialIdleState)
         {
-            owner?.IdleStateEntered(_interactionTracker, new InteractionTrackerIdleStateEnteredArgs(requestId: _requestId, isFromBinding: false));
+            _interactionTracker.NotifyIdleStateEntered(_requestId, isFromBinding: false);
         }
     }
 
-    internal override void StartUserManipulation(Point position, IPointer pointer)
+    internal override void StartUserManipulation(Point position)
     {
         _interactionTracker.ChangeState(new InteractingState(_interactionTracker));
     }

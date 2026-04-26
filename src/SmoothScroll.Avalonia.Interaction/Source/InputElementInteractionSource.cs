@@ -433,7 +433,7 @@ public class InputElementInteractionSource : IDisposable
             return;
         }
 
-        _tracker.StartUserManipulation(e.GetPosition(_inputElement), e.Pointer);
+        _tracker.StartUserManipulation(e.GetPosition(_inputElement));
         _tracker.ReceiveManipulationDelta(translationDelta);
         _tracker.CompleteUserManipulation();
         e.Handled = true;
@@ -503,7 +503,7 @@ public class InputElementInteractionSource : IDisposable
 
         var pointer = _firstContact ?? e.Pointer;
         _isInteracting = true;
-        _tracker.StartUserManipulation(position, pointer);
+        _tracker.StartUserManipulation(position);
         CapturePointer(pointer);
         if (pointer != e.Pointer)
         {

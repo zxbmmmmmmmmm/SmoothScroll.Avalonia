@@ -1,6 +1,4 @@
-﻿using System.Reflection.Metadata;
-using Avalonia;
-using Avalonia.Input;
+﻿using Avalonia;
 using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Utilities;
 
@@ -17,15 +15,15 @@ internal abstract class InertiaState : InteractionTrackerState
     internal override string Name => "InertiaState";
 
     protected InertiaState(
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         int requestId) : base(interactionTracker)
     {
         RequestId = requestId;
     }
 
-    protected sealed override void EnterState(IInteractionTrackerOwner? owner)
+    protected sealed override void EnterState()
     {
-        owner?.InertiaStateEntered(_interactionTracker, new InteractionTrackerInertiaStateEnteredArgs()
+        _interactionTracker.NotifyInertiaStateEntered(new InteractionTrackerInertiaStateEnteredArgs()
         {
             IsFromBinding = false, /* TODO */
             IsInertiaFromImpulse = false, /* TODO */
@@ -54,7 +52,7 @@ internal abstract class InertiaState : InteractionTrackerState
         Handler.Start();
     }
 
-    internal override void StartUserManipulation(Point position, IPointer pointer)
+    internal override void StartUserManipulation(Point position)
     {
         Handler.Stop();
         _interactionTracker.ChangeState(new InteractingState(_interactionTracker));
