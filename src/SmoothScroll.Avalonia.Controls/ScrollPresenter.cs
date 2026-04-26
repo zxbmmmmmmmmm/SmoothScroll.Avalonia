@@ -691,7 +691,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             Viewport = finalSize;
             _isAnchorElementDirty = true;
 
-            UpdateScrollableAreaForScale(_interactionTracker?.Scale ?? 1.0);
+            UpdateScrollableAreaForScale(ZoomFactor);
         }
         finally
         {
