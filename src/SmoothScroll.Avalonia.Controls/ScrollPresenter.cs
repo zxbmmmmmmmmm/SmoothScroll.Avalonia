@@ -498,8 +498,8 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             return default;
         }
 
-        var centerX = (targetPosition.X - (currentPosition.X * scaleFactor)) / denominator;
-        var centerY = (targetPosition.Y - (currentPosition.Y * scaleFactor)) / denominator;
+        var centerX = ((currentPosition.X * scaleFactor) - targetPosition.X) / denominator;
+        var centerY = ((currentPosition.Y * scaleFactor) - targetPosition.Y) / denominator;
 
         return new Vector3D(centerX, centerY, 0);
     }
