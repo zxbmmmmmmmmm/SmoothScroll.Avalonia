@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Input;
 using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Utilities;
@@ -17,26 +16,24 @@ internal abstract class InertiaState : InteractionTrackerState
     internal override string Name => "InertiaState";
 
     protected InertiaState(
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         int requestId) : base(interactionTracker)
     {
         RequestId = requestId;
     }
 
-    protected sealed override void EnterState(IInteractionTrackerOwner? owner)
+    protected sealed override void EnterState()
     {
-        owner?.InertiaStateEntered(_interactionTracker, new InteractionTrackerInertiaStateEnteredArgs()
-        {
-            IsFromBinding = false, /* TODO */
-            IsInertiaFromImpulse = false, /* TODO */
-            ModifiedRestingPosition = Handler.FinalModifiedPosition,
-            ModifiedRestingScale = Math.Clamp(Handler.FinalModifiedScale, _interactionTracker.MinScale, _interactionTracker.MaxScale),
-            NaturalRestingPosition = Handler.FinalPosition,
-            NaturalRestingScale = Handler.FinalModifiedScale,
-            PositionVelocityInPixelsPerSecond = Handler.InitialVelocity,
-            RequestId = RequestId,
-            ScaleVelocityInPercentPerSecond = 0.0f, /* TODO: Scale not yet implemented */
-        });
+        _interactionTracker.NotifyInertiaStateEntered(
+            Handler.FinalModifiedPosition,
+            Math.Clamp(Handler.FinalModifiedScale, _interactionTracker.MinScale, _interactionTracker.MaxScale),
+            Handler.FinalPosition,
+            Handler.FinalModifiedScale,
+            Handler.InitialVelocity,
+            RequestId,
+            scaleVelocityInPercentPerSecond: 0.0f,
+            isInertiaFromImpulse: false,
+            isFromBinding: false);
 
         // If TryUpdatePosition is called with clamping option disabled, the position set can go outside the [MinPosition..MaxPosition] range.
         // We adjust MinPosition/MaxPosition when we enter idle.

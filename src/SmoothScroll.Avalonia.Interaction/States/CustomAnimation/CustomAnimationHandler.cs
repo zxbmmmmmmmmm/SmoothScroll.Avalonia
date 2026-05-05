@@ -4,7 +4,6 @@ using Avalonia.Rendering.Composition;
 using Avalonia.Rendering.Composition.Animations;
 using Avalonia.Rendering.Composition.Expressions;
 using Avalonia.Rendering.Composition.Server;
-using Avalonia.Threading;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -15,16 +14,16 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
     private readonly CompositionAnimation _animation;
     private TimeSpan _startTime;
     private readonly TimeSpan? _duration;
-    protected readonly InteractionTracker InteractionTracker;
+    protected readonly ServerInteractionTracker InteractionTracker;
 
     protected CustomAnimationHandler(
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         CompositionAnimation animation,
         ServerCompositor compositor) : base(compositor)
     {
         InteractionTracker = interactionTracker;
         _animation = animation;
-        if(animation is KeyFrameAnimation keyFrameAnimation)
+        if (animation is KeyFrameAnimation keyFrameAnimation)
         {
             _duration = keyFrameAnimation.Duration;
         }
@@ -32,10 +31,10 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
 
     public virtual void Start()
     {
-        var targetProperty = InteractionTracker.Server.GetCompositionProperty(_animation.Target!)!;
-        _animationInstance = _animation.CreateInstance(InteractionTracker.Server, null);
+        var targetProperty = InteractionTracker.GetCompositionProperty(_animation.Target!)!;
+        _animationInstance = _animation.CreateInstance(InteractionTracker, null);
         _animationInstance.Initialize(Compositor.Clock.Elapsed,
-            targetProperty.GetVariant!(InteractionTracker.Server), targetProperty);
+            targetProperty.GetVariant!(InteractionTracker), targetProperty);
         _startTime = Compositor.Clock.Elapsed;
         Compositor.Animations.AddToClock(this);
         Activate();
@@ -49,20 +48,21 @@ internal abstract class CustomAnimationHandler : ServerObject, IServerClockItem
 
     public void OnTick()
     {
-        if(_animationInstance is null) return;
+        if (_animationInstance is null)
+            return;
+
         var elapsed = Compositor.Clock.Elapsed;
         if (_duration is not null && elapsed - _startTime > _duration)
         {
             Stop();
-            Dispatcher.UIThread.Post(() => {
-                InteractionTracker.ChangeState(new ScaleInertiaState(
-                    InteractionTracker,
-                    default, 0
-                    , requestId: 0));
-            }, priority:
-            DispatcherPriority.Render);
+            InteractionTracker.ChangeState(new ScaleInertiaState(
+                InteractionTracker,
+                default,
+                0,
+                requestId: 0));
             return;
         }
+
         var value = _animationInstance.Evaluate(elapsed, InteractionTracker.Position);
         Evaluate(value);
     }
@@ -75,10 +75,10 @@ internal class ScaleAnimationHandler: CustomAnimationHandler
     private readonly Vector3D _centerPoint;
 
     public ScaleAnimationHandler(
-        InteractionTracker interactionTracker,
-        CompositionAnimation animation, 
+        ServerInteractionTracker interactionTracker,
+        CompositionAnimation animation,
         Vector3D centerPoint,
-        ServerCompositor compositor) 
+        ServerCompositor compositor)
         : base(interactionTracker, animation, compositor)
     {
         _centerPoint = centerPoint;
@@ -99,7 +99,7 @@ internal class ScaleAnimationHandler: CustomAnimationHandler
         if (!MathUtilities.AreClose(modifiedScale, InteractionTracker.MinScale)
             && !MathUtilities.AreClose(modifiedScale, InteractionTracker.MaxScale))
         {
-            InteractionTracker.SetScale(modifiedScale, _centerPoint , 0);
+            InteractionTracker.SetScale(modifiedScale, _centerPoint, 0);
         }
     }
 }
@@ -107,10 +107,10 @@ internal class ScaleAnimationHandler: CustomAnimationHandler
 internal class PositionAnimationHandler : CustomAnimationHandler
 {
     public PositionAnimationHandler(
-        InteractionTracker interactionTracker,
-        CompositionAnimation animation, 
+        ServerInteractionTracker interactionTracker,
+        CompositionAnimation animation,
         ServerCompositor compositor)
-    : base(interactionTracker, animation, compositor)
+        : base(interactionTracker, animation, compositor)
     {
     }
 

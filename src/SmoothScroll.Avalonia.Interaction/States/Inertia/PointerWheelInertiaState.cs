@@ -7,14 +7,14 @@ internal sealed class PointerWheelInertiaState : InertiaState
 {
 
     public PointerWheelInertiaState(
-        InteractionTracker interactionTracker,
+        ServerInteractionTracker interactionTracker,
         Vector3D translationVelocities,
         int requestId) : base(interactionTracker, requestId)
     {
         Handler = new PointerWheelInertiaHandler(
-            interactionTracker.Server.Compositor,
+            interactionTracker.Compositor,
             interactionTracker,
             translationVelocities);
-        EnterState(interactionTracker.Owner);
+        EnterState();
     }
 }

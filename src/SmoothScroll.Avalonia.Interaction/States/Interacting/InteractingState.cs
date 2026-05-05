@@ -13,16 +13,16 @@ internal sealed class InteractingState : InteractionTrackerState
     private double _previousScale;
     private Point _previousOrigin;
     private Vector3D _position;
-    public InteractingState(InteractionTracker interactionTracker) : base(interactionTracker)
+    public InteractingState(ServerInteractionTracker interactionTracker) : base(interactionTracker)
     {
         _previousScale = interactionTracker.Scale;
-        EnterState(interactionTracker.Owner);
         _position = GetOriginalPoint(interactionTracker.Position, _interactionTracker.MinPosition, _interactionTracker.MaxPosition);
+        EnterState();
     }
 
-    protected override void EnterState(IInteractionTrackerOwner? owner)
+    protected override void EnterState()
     {
-        owner?.InteractingStateEntered(_interactionTracker, new InteractionTrackerInteractingStateEnteredArgs(requestId: 0, isFromBinding: false));
+        _interactionTracker.NotifyInteractingStateEntered(requestId: 0, isFromBinding: false);
     }
 
     internal override void StartUserManipulation(Point position, IPointer pointer)
@@ -133,16 +133,17 @@ internal sealed class InteractingState : InteractionTrackerState
 
     internal override void TryUpdatePositionWithAdditionalVelocity(Vector3D velocityInPixelsPerSecond, int requestId)
     {
-        _interactionTracker.Owner?.RequestIgnored(_interactionTracker, new InteractionTrackerRequestIgnoredArgs(requestId));
+        _interactionTracker.NotifyRequestIgnored(requestId);
     }
 
     internal override void TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option, int requestId)
     {
-        _interactionTracker.Owner?.RequestIgnored(_interactionTracker, new InteractionTrackerRequestIgnoredArgs(requestId));
+        _interactionTracker.NotifyRequestIgnored(requestId);
     }
 
     internal override void ReceiveBoundsUpdate()
     {
+        SyncPositionFromTracker();
     }
 
     public static Vector3D GetElasticPoint(Vector3D current, Vector3D min, Vector3D max, double tension = Tension)
@@ -173,7 +174,7 @@ internal sealed class InteractingState : InteractionTrackerState
         {
             resZ = min.Z - CalculateOffset(min.Z - current.Z, tension);
         }
-        else if (current.Y > max.Y)
+        else if (current.Z > max.Z)
         {
             resZ = max.Z + CalculateOffset(current.Z - max.Z, tension);
         }
@@ -219,7 +220,7 @@ internal sealed class InteractingState : InteractionTrackerState
         if (elasticPoint.Z < min.Z)
         {
             double resultOffset = min.Z - elasticPoint.Z;
-            originZ = min.Y - CalculateInverseOffset(resultOffset, tension);
+            originZ = min.Z - CalculateInverseOffset(resultOffset, tension);
         }
         else if (elasticPoint.Z > max.Z)
         {
@@ -229,14 +230,14 @@ internal sealed class InteractingState : InteractionTrackerState
 
         return new Vector3D(originX, originY, originZ);
     }
-    
+
     private static double CalculateInverseOffset(double resultOffset, double tension)
     {
         double limit = ReferenceRange * tension;
 
         if (resultOffset >= limit)
         {
-            return double.MaxValue; 
+            return double.MaxValue;
         }
         return (resultOffset * ReferenceRange) / (limit - resultOffset);
     }
