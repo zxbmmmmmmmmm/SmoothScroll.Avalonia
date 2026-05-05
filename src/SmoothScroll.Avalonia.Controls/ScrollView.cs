@@ -29,13 +29,13 @@ public partial class ScrollView : ScrollViewer
     [GeneratedStyledProperty]
     public partial bool IsZoomEnabled { get; set; }
 
-    public void ZoomTo(double zoomFactor, bool isAnimated)
+    public void ZoomTo(double zoomFactor, bool isAnimated = true)
     {
         var presenter = Presenter as ScrollPresenter;
         presenter?.ZoomTo(zoomFactor, isAnimated);
     }
 
-    public void ZoomBy(double zoomFactorDelta, bool isAnimated)
+    public void ZoomBy(double zoomFactorDelta, bool isAnimated = true)
     {
         var presenter = Presenter as ScrollPresenter;
         presenter?.ZoomBy(zoomFactorDelta, isAnimated);
