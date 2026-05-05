@@ -292,6 +292,12 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     [GeneratedStyledProperty]
     public partial bool IsZoomEnabled { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value that indicates whether the content prefers to scroll horizontally or vertically.
+    /// </summary>
+    [GeneratedStyledProperty]
+    public partial ScrollContentOrientation ContentOrientation { get; set; }
+
     /// <inheritdoc/>
     Control? IScrollAnchorProvider.CurrentAnchor
     {
@@ -566,8 +572,10 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         var constraint = IsZoomEnabled
             ? new Size(double.PositiveInfinity, double.PositiveInfinity)
             : new Size(
-            CanHorizontallyScroll ? double.PositiveInfinity : availableWithPadding.Width,
-            CanVerticallyScroll ? double.PositiveInfinity : availableWithPadding.Height);
+            ContentOrientation is ScrollContentOrientation.Horizontal or ScrollContentOrientation.Both 
+                ? double.PositiveInfinity : availableWithPadding.Width,
+            ContentOrientation is ScrollContentOrientation.Vertical or ScrollContentOrientation.Both
+                ? double.PositiveInfinity : availableWithPadding.Height);
 
         Child.Measure(constraint);
 

@@ -29,6 +29,12 @@ public partial class ScrollView : ScrollViewer
     [GeneratedStyledProperty]
     public partial bool IsZoomEnabled { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value that indicates whether the content prefers to scroll horizontally or vertically.
+    /// </summary>
+    [GeneratedStyledProperty]
+    public partial ScrollContentOrientation ContentOrientation { get; set; }
+
     public void ZoomTo(double zoomFactor, bool isAnimated = true)
     {
         var presenter = Presenter as ScrollPresenter;

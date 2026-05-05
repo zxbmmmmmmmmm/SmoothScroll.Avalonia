@@ -17,6 +17,7 @@
                                 Grid.Column="0"
                                 Padding="{TemplateBinding Padding}"
                                 Background="{TemplateBinding Background}"
+                                ContentOrientation="{TemplateBinding ContentOrientation}"
                                 HorizontalSnapPointsAlignment="{TemplateBinding HorizontalSnapPointsAlignment}"
                                 HorizontalSnapPointsType="{TemplateBinding HorizontalSnapPointsType}"
                                 IsZoomEnabled="{TemplateBinding IsZoomEnabled}"
