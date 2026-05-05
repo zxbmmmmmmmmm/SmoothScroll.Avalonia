@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Xml.Linq;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
@@ -1382,14 +1383,14 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _interactionSource.PositionYChainingMode = chainingMode;
     }
 
-    public void ZoomBy(double zoomFactorDelta)
+    public void ZoomBy(double zoomFactorDelta, bool isAnimated = true)
     {
         if (_interactionTracker is null)
             return;
-        ZoomTo(_interactionTracker.Scale + zoomFactorDelta);
+        ZoomTo(_interactionTracker.Scale + zoomFactorDelta, isAnimated);
     }
 
-    public void ZoomTo(double zoomFactor)
+    public void ZoomTo(double zoomFactor, bool isAnimated = true)
     {
         if (_interactionTracker is null)
             return;
@@ -1397,13 +1398,21 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         if (visual is null)
             return;
         var newScale = Math.Clamp(zoomFactor, _interactionTracker.MinScale, _interactionTracker.MaxScale);
-
-        var compositor = visual.Compositor;
-        var animation = compositor.CreateDoubleKeyFrameAnimation();
-        animation.Duration = TimeSpan.FromMilliseconds(300);
-        animation.InsertKeyFrame(1.0f, newScale, new CircularEaseOut());
         var viewportCenter = new Vector3D(Viewport.Width * 0.5, Viewport.Height * 0.5, 0);
-        _interactionTracker.TryUpdateScaleWithAnimation(animation, viewportCenter);
+
+        if (isAnimated)
+        {
+            var compositor = visual.Compositor;
+            var animation = compositor.CreateDoubleKeyFrameAnimation();
+            animation.Duration = TimeSpan.FromMilliseconds(300);
+            animation.InsertKeyFrame(1.0f, newScale, new CircularEaseOut());
+            _interactionTracker.TryUpdateScaleWithAnimation(animation, viewportCenter);
+        }
+        else
+        {
+            _interactionTracker.TryUpdateScale(newScale, viewportCenter);
+        }
+
     }
 
     private CompositionVisual? GetCompositionVisual()
