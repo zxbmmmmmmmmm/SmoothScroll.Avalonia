@@ -430,21 +430,10 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         return res;
     }
 
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-        AttachToScrollViewer();
-
-        if (Child?.IsAttachedToVisualTree() == true)
-            Initialize();
-        else
-            Child?.AttachedToVisualTree += OnChildAttachedToVisualTree;
-    }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        Child?.AttachedToVisualTree -= OnChildAttachedToVisualTree;
         StopArrangeTimer();
         _interactionTracker?.Dispose();
         _interactionTracker = null;
@@ -454,9 +443,11 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _animationGroup = null;
     }
 
-    private void OnChildAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    protected override void OnLoaded(RoutedEventArgs e)
     {
+        AttachToScrollViewer();
         Initialize();
+        base.OnLoaded(e);
     }
 
     private void Initialize()
@@ -675,14 +666,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             }
             else
             {
-                if (IsZoomEnabled)
-                {
-                    ArrangeOverrideImpl(size, -Offset - new Point(_interactionTracker.Position.X, _interactionTracker.Position.Y));
-                }
-                else
-                {
-                    ArrangeOverrideImpl(size, -Offset);
-                }
+                ArrangeOverrideImpl(size, -Offset);
             }
 
             Viewport = finalSize;
