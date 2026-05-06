@@ -460,7 +460,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         // This directly access Server side object from UI thread, which is usually considered not safe
         // however this should be fine as it is before the composition activated / animations running.
-        childVisual!.Server.Scale = scale;
+        //childVisual!.Server.Scale = scale;
         EnsureScrollAnimation();
     }
 
@@ -672,7 +672,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             Viewport = finalSize;
             _isAnchorElementDirty = true;
 
-            UpdateScrollableAreaForScale(_interactionTracker?.Scale ?? 1.0);
+            UpdateScrollableAreaForScale(ZoomFactor);
         }
         finally
         {
@@ -910,7 +910,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         // If we have an anchor and its position relative to Child has changed during the
         // arrange then that change wasn't just due to scrolling (as scrolling doesn't adjust
         // relative positions within Child).
-        if (_anchorElement != null &&
+        if (_anchorElement is not null &&
             TranslateBounds(_anchorElement, Child!, out var updatedBounds) &&
             updatedBounds.Position != _anchorElementBounds.Position)
         {
@@ -965,30 +965,30 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     {
         var scrollable = GetScrollSnapPointsInfo(Content);
 
-        if (scrollable is IScrollSnapPointsInfo scrollSnapPointsInfo)
+        if (scrollable is not null)
         {
-            _areVerticalSnapPointsRegular = scrollSnapPointsInfo.AreVerticalSnapPointsRegular;
-            _areHorizontalSnapPointsRegular = scrollSnapPointsInfo.AreHorizontalSnapPointsRegular;
+            _areVerticalSnapPointsRegular = scrollable.AreVerticalSnapPointsRegular;
+            _areHorizontalSnapPointsRegular = scrollable.AreHorizontalSnapPointsRegular;
 
             if (!_areVerticalSnapPointsRegular)
             {
-                _verticalSnapPoints = scrollSnapPointsInfo.GetIrregularSnapPoints(Orientation.Vertical, VerticalSnapPointsAlignment);
+                _verticalSnapPoints = scrollable.GetIrregularSnapPoints(Orientation.Vertical, VerticalSnapPointsAlignment);
             }
             else
             {
                 _verticalSnapPoints = new List<double>();
-                _verticalSnapPoint = scrollSnapPointsInfo.GetRegularSnapPoints(Orientation.Vertical, VerticalSnapPointsAlignment, out _verticalSnapPointOffset);
+                _verticalSnapPoint = scrollable.GetRegularSnapPoints(Orientation.Vertical, VerticalSnapPointsAlignment, out _verticalSnapPointOffset);
 
             }
 
             if (!_areHorizontalSnapPointsRegular)
             {
-                _horizontalSnapPoints = scrollSnapPointsInfo.GetIrregularSnapPoints(Orientation.Horizontal, HorizontalSnapPointsAlignment);
+                _horizontalSnapPoints = scrollable.GetIrregularSnapPoints(Orientation.Horizontal, HorizontalSnapPointsAlignment);
             }
             else
             {
                 _horizontalSnapPoints = new List<double>();
-                _horizontalSnapPoint = scrollSnapPointsInfo.GetRegularSnapPoints(Orientation.Horizontal, HorizontalSnapPointsAlignment, out _horizontalSnapPointOffset);
+                _horizontalSnapPoint = scrollable.GetRegularSnapPoints(Orientation.Horizontal, HorizontalSnapPointsAlignment, out _horizontalSnapPointOffset);
             }
         }
         else
@@ -1171,6 +1171,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         var position = new Vector(args.Position.X, args.Position.Y);
         var scale = args.Scale;
+        var compositionVisual = GetCompositionVisual();
 
 
         void ApplyValues()
@@ -1244,7 +1245,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
     private void ApplyScrollableArea((Size ScaledExtent, Vector MinPosition, Vector MaxPosition) scrollableArea)
     {
-        if (_interactionTracker == null || _interactionSource == null)
+        if (_interactionTracker is null || _interactionSource is null)
         {
             return;
         }

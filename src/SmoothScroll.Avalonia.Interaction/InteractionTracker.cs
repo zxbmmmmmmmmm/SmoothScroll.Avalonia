@@ -106,7 +106,7 @@ public partial class InteractionTracker : CompositionObject
 
     public Vector3D Position { get; private set; }
 
-    public double Scale { get; private set; } = 1.0;
+    public double Scale { get; private set; }
 
     public int TryUpdatePosition(Vector3D value)
     => TryUpdatePosition(value, InteractionTrackerClampingOption.Auto);

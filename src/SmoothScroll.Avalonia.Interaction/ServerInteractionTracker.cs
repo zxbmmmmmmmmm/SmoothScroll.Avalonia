@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Input;
 using Avalonia.Rendering.Composition;
 using Avalonia.Rendering.Composition.Animations;
+using Avalonia.Rendering.Composition.Expressions;
 using Avalonia.Rendering.Composition.Server;
 using Avalonia.Rendering.Composition.Transport;
 using Avalonia.Threading;
@@ -96,7 +97,6 @@ internal partial class ServerInteractionTracker
     {
         if (Position == newPosition)
             return;
-
         Position = newPosition;
         NotifyValuesChanged(newPosition, Scale, requestId);
     }
@@ -212,7 +212,18 @@ partial class ServerInteractionTracker : ServerObject
     Vector3D _position;
     public Vector3D Position { get => _position; set => SetAnimatedValue(s_IdOfPositionProperty, out _position, value); }
 
-    internal readonly static CompositionProperty<Vector3D> s_IdOfPositionProperty = CompositionProperty.Register<ServerInteractionTracker, Vector3D>("Position", obj => ((ServerInteractionTracker)obj)._position, (obj, v) => ((ServerInteractionTracker)obj)._position = v, obj => ((ServerInteractionTracker)obj)._position);
+    internal readonly static CompositionProperty<Vector3D> s_IdOfPositionProperty =
+        CompositionProperty.Register<ServerInteractionTracker, Vector3D>(
+            "Position",
+            obj => ((ServerInteractionTracker)obj)._position,
+            (obj, v) => ((ServerInteractionTracker)obj)._position = v,
+            GetPosition);
+
+    private static ExpressionVariant GetPosition(SimpleServerObject obj)
+    {
+        return ((ServerInteractionTracker)obj)._position;
+    }
+
     Vector3D _minPosition;
     public Vector3D MinPosition { get => _minPosition; set => SetAnimatedValue(s_IdOfMinPositionProperty, out _minPosition, value); }
 
@@ -232,7 +243,18 @@ partial class ServerInteractionTracker : ServerObject
     double _scale;
     public double Scale { get => _scale; set => SetAnimatedValue(s_IdOfScaleProperty, out _scale, value); }
 
-    internal readonly static CompositionProperty<double> s_IdOfScaleProperty = CompositionProperty.Register<ServerInteractionTracker, double>("Scale", obj => ((ServerInteractionTracker)obj)._scale, (obj, v) => ((ServerInteractionTracker)obj)._scale = v, obj => ((ServerInteractionTracker)obj)._scale);
+    internal readonly static CompositionProperty<double> s_IdOfScaleProperty =
+        CompositionProperty.Register<ServerInteractionTracker, double>(
+            "Scale",
+            obj => ((ServerInteractionTracker)obj)._scale,
+            (obj, v) => ((ServerInteractionTracker)obj)._scale = v,
+            GetScale);
+
+    private static ExpressionVariant GetScale(SimpleServerObject obj)
+    {
+        return ((ServerInteractionTracker)obj)._scale;
+    }
+
     protected override void DeserializeChangesCore(BatchStreamReader reader, TimeSpan committedAt)
     {
         base.DeserializeChangesCore(reader, committedAt);
