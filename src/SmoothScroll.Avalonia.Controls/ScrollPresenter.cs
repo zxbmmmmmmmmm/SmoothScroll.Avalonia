@@ -298,6 +298,18 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
     [GeneratedStyledProperty]
     public partial ScrollContentOrientation ContentOrientation { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value that determines how manipulation input influences scrolling behavior on the horizontal axis.
+    /// </summary>
+    [GeneratedStyledProperty]
+    public ScrollMode HorizontalScrollMode { get; set; } = ScrollMode.Auto;
+
+    /// <summary>
+    /// Gets or sets a value that determines how manipulation input influences scrolling behavior on the vertical axis.
+    /// </summary>
+    [GeneratedStyledProperty]
+    public ScrollMode VerticalScrollMode { get; set; } = ScrollMode.Auto;
+
     /// <inheritdoc/>
     Control? IScrollAnchorProvider.CurrentAnchor
     {
@@ -515,11 +527,10 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         _ownerSubscriptions?.Dispose();
         _owner = owner;
-
-        var subscriptionDisposables = new IDisposable?[]
+        
+        IDisposable?[] subscriptionDisposables = new IDisposable?[]
         {
-            IfUnset(CanHorizontallyScrollProperty, p => Bind(p, owner.GetObservable(ScrollViewer.HorizontalScrollBarVisibilityProperty, NotDisabled), BindingPriority.Template)),
-            IfUnset(CanVerticallyScrollProperty, p => Bind(p, owner.GetObservable(ScrollViewer.VerticalScrollBarVisibilityProperty, NotDisabled), BindingPriority.Template)),
+
             IfUnset(OffsetProperty, p => Bind(p, owner.GetBindingObservable(ScrollViewer.OffsetProperty), BindingPriority.Template)),
             IfUnset(HorizontalContentAlignmentProperty, p => Bind(p, owner.GetBindingObservable(ContentControl.HorizontalContentAlignmentProperty), BindingPriority.Template)),
             IfUnset(VerticalContentAlignmentProperty, p => Bind(p, owner.GetBindingObservable(ContentControl.VerticalContentAlignmentProperty), BindingPriority.Template)),
@@ -569,9 +580,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
 
         var availableWithPadding = availableSize.Deflate(Padding);
-        var constraint = IsZoomEnabled
-            ? new Size(double.PositiveInfinity, double.PositiveInfinity)
-            : new Size(
+        var constraint =  new Size(
             ContentOrientation is ScrollContentOrientation.Horizontal or ScrollContentOrientation.Both 
                 ? double.PositiveInfinity : availableWithPadding.Width,
             ContentOrientation is ScrollContentOrientation.Vertical or ScrollContentOrientation.Both
@@ -748,6 +757,16 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
     }
 
+    private bool GetComputedScrollMode(Size scaledExtent)
+    {
+        if (IsZoomEnabled)
+        {
+            
+        }
+        var scrollableWidth = Math.Max(0, scaledExtent.Width - Viewport.Width);
+        var scrollHeight = Math.Max(0, scaledExtent.Height - Viewport.Height);
+        
+    }
 
     partial void OnPropertyChangedOverride(AvaloniaPropertyChangedEventArgs change)
     {
@@ -1242,6 +1261,8 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _interactionTracker.MaxPosition = new Vector3D(scrollableArea.MaxPosition.X, scrollableArea.MaxPosition.Y, 0);
 
         var range = scrollableArea.MaxPosition - scrollableArea.MinPosition;
+
+        GetComputedScrollMode(scrollableArea.ScaledExtent, true);
 
         _interactionSource.PositionXSourceMode = MathUtilities.IsZero(range.X) && !CanHorizontallyScroll
             ? InteractionSourceMode.Disabled
