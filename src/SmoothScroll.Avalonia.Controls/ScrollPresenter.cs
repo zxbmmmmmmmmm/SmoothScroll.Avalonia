@@ -539,7 +539,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         _ownerSubscriptions?.Dispose();
         _owner = owner;
-        
+
         IDisposable?[] subscriptionDisposables = new IDisposable?[]
         {
 
@@ -592,8 +592,8 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
 
         var availableWithPadding = availableSize.Deflate(Padding);
-        var constraint =  new Size(
-            ContentOrientation is ScrollContentOrientation.Horizontal or ScrollContentOrientation.Both 
+        var constraint = new Size(
+            ContentOrientation is ScrollContentOrientation.Horizontal or ScrollContentOrientation.Both
                 ? double.PositiveInfinity : availableWithPadding.Width,
             ContentOrientation is ScrollContentOrientation.Vertical or ScrollContentOrientation.Both
                 ? double.PositiveInfinity : availableWithPadding.Height);
@@ -772,12 +772,12 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
         var scrollableWidth = Math.Max(0, Child.DesiredSize.Width - Viewport.Width);
         var scrollHeight = Math.Max(0, Child.DesiredSize.Height - Viewport.Height);
-        if(HorizontalScrollMode == ScrollMode.Enabled
+        if (HorizontalScrollMode == ScrollMode.Enabled
             || (HorizontalScrollMode == ScrollMode.Auto && scrollableWidth > 0))
         {
             SetValue(CanHorizontallyScrollProperty, true);
         }
-        if(VerticalScrollMode == ScrollMode.Enabled
+        if (VerticalScrollMode == ScrollMode.Enabled
             || (VerticalScrollMode == ScrollMode.Auto && scrollHeight > 0))
         {
             SetValue(CanVerticallyScrollProperty, true);
@@ -1413,7 +1413,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         var compositionVisual = ElementComposition.GetElementVisual(Child)!;
         if (_animationGroup is null)
         {
-            SynchronizeCompositionVisual(compositionVisual);
             _animationGroup = CreateScrollAnimationGroup(compositionVisual);
         }
 
@@ -1465,22 +1464,9 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         return animationGroup;
     }
 
-    private void SynchronizeCompositionVisual(CompositionVisual compositionVisual)
-    {
-        if (_interactionTracker is null || Child is null)
-        {
-            return;
-        }
-
-        SynchronizeCompositionVisual(
-            compositionVisual,
-            _interactionTracker.Position,
-            _interactionTracker.Scale);
-    }
-
     private void SynchronizeCompositionVisualBeforeFirstAnimation()
     {
-        if (_animationGroup is not null || Child is null || !Child.IsAttachedToVisualTree())
+        if (_animationGroup is not null || Child is null || IsLoaded)
         {
             return;
         }
@@ -1493,24 +1479,15 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
 
         var position = _interactionTracker?.Position ?? new Vector3D(Offset.X, Offset.Y, 0);
         var scale = _interactionTracker?.Scale ?? ZoomFactor;
-        SynchronizeCompositionVisual(compositionVisual, position, scale);
-    }
-
-    private void SynchronizeCompositionVisual(
-        CompositionVisual compositionVisual,
-        Vector3D position,
-        double scale)
-    {
-        if (Child is null)
-        {
-            return;
-        }
 
         var visualScale = GetScrollScale(scale);
         var translation = GetScrollTranslation(compositionVisual, position);
 
         compositionVisual.Scale = visualScale;
-        compositionVisual.Translation = translation;
+        if (scale < 1)
+        {
+            compositionVisual.Translation = translation;
+        }
     }
 
     private static Vector3D GetScrollScale(double scale)
