@@ -1,6 +1,7 @@
 <ContentPage
     x:Class="SmoothScroll.Avalonia.Sample.Views.Pages.ChainingPage"
     xmlns="https://github.com/avaloniaui"
+    xmlns:controls="using:SmoothScroll.Avalonia.Controls"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -157,12 +158,11 @@
                     Padding="0"
                     BorderBrush="Green"
                     BorderThickness="1">
-                    <ScrollViewer
+                    <controls:ScrollView
                         x:Name="HorizontalSnapsScrollViewer"
                         Height="400"
                         HorizontalAlignment="Stretch"
-                        HorizontalScrollBarVisibility="Auto"
-                        VerticalScrollBarVisibility="Disabled">
+                        ContentOrientation="Horizontal">
                         <StackPanel
                             HorizontalAlignment="Stretch"
                             Orientation="Horizontal"
@@ -234,7 +234,7 @@
                                     Text="Child 6" />
                             </Border>
                         </StackPanel>
-                    </ScrollViewer>
+                    </controls:ScrollView>
                 </Border>
             </Grid>
         </StackPanel>

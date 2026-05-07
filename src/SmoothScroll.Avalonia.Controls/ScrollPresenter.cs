@@ -495,7 +495,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         {
             _compositionUpdate = true;
             _scaleChanged = !MathUtilities.AreClose(ZoomFactor, 1.0);
-            ApplyScrollableArea(scrollableArea);
         }
         finally
         {
@@ -626,6 +625,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         {
             double width = 0;
             double height = 0;
+            GetComputedScrollMode(finalSize);
             if (IsZoomEnabled)
             {
                 width = (HorizontalContentAlignment == HorizontalAlignment.Stretch) ?
@@ -693,7 +693,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             Viewport = finalSize;
             _isAnchorElementDirty = true;
 
-            UpdateScrollableAreaForScale(ZoomFactor);
+            ApplyScrollableArea(CalculateScrollableArea(ZoomFactor));
             SynchronizeCompositionVisualBeforeFirstAnimation();
         }
         finally
@@ -763,24 +763,35 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         }
     }
 
-    private void GetComputedScrollMode(Size scaledExtent)
+    private void GetComputedScrollMode(Size finalSize)
     {
         if (IsZoomEnabled)
         {
             SetValue(CanHorizontallyScrollProperty, true);
             SetValue(CanVerticallyScrollProperty, true);
+            return;
         }
-        var scrollableWidth = Math.Max(0, Child.DesiredSize.Width - Viewport.Width);
-        var scrollHeight = Math.Max(0, Child.DesiredSize.Height - Viewport.Height);
+        if (Child?.PreviousMeasure is null)
+            return;
+        var scrollableWidth = Math.Max(0, Child.PreviousMeasure.Value.Width - finalSize.Width);
+        var scrollHeight = Math.Max(0, Child.PreviousMeasure.Value.Height - finalSize.Height);
         if (HorizontalScrollMode == ScrollMode.Enabled
             || (HorizontalScrollMode == ScrollMode.Auto && scrollableWidth > 0))
         {
             SetValue(CanHorizontallyScrollProperty, true);
         }
+        else
+        {
+            SetValue(CanHorizontallyScrollProperty, false);      
+        }
         if (VerticalScrollMode == ScrollMode.Enabled
             || (VerticalScrollMode == ScrollMode.Auto && scrollHeight > 0))
         {
             SetValue(CanVerticallyScrollProperty, true);
+        }
+        else
+        {
+            SetValue(CanVerticallyScrollProperty, false);
         }
     }
 
@@ -1217,7 +1228,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
                 _compositionUpdate = true;
                 _scaleChanged = !MathUtilities.AreClose(scale, ZoomFactor);
 
-                UpdateScrollableAreaForScale(scale);
+                ApplyScrollableArea(CalculateScrollableArea(scale));
 
                 SetCurrentValue(OffsetProperty, position);
                 SetCurrentValue(ZoomFactorProperty, scale);
@@ -1264,15 +1275,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         EnsureScrollAnimation();
     }
 
-    private void UpdateScrollableAreaForScale(double scale)
-    {
-        if (_interactionTracker == null || Child == null || _interactionSource == null)
-        {
-            return;
-        }
-
-        ApplyScrollableArea(CalculateScrollableArea(scale));
-    }
 
     private void ApplyScrollableArea((Size ScaledExtent, Vector MinPosition, Vector MaxPosition) scrollableArea)
     {
@@ -1287,8 +1289,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         _interactionTracker.MaxPosition = new Vector3D(scrollableArea.MaxPosition.X, scrollableArea.MaxPosition.Y, 0);
 
         var range = scrollableArea.MaxPosition - scrollableArea.MinPosition;
-
-        GetComputedScrollMode(scrollableArea.ScaledExtent);
 
         _interactionSource.PositionXSourceMode = MathUtilities.IsZero(range.X) && !CanHorizontallyScroll
             ? InteractionSourceMode.Disabled
