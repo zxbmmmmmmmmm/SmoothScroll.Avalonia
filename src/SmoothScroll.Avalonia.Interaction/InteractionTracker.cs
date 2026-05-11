@@ -2,6 +2,9 @@
 using Avalonia.Input;
 using Avalonia.Rendering.Composition;
 using Avalonia.Rendering.Composition.Animations;
+using Avalonia.Rendering.Composition.Expressions;
+using Avalonia.Rendering.Composition.Server;
+using Avalonia.Rendering.Composition.Transport;
 using Avalonia.Utilities;
 
 namespace SmoothScroll.Avalonia.Interaction;
@@ -258,6 +261,44 @@ public partial class InteractionTracker : CompositionObject
         }
 
         Compositor.PostServerJob(() => action(Server), false);
+    }
+
+
+}
+
+public partial class InteractionTracker 
+{
+    private InteractionTrackerChangedFields _changedFieldsOfInteractionTracker;
+    public override void StartAnimation(string propertyName, CompositionAnimation animation, ExpressionVariant? finalValue)
+    {
+        if(propertyName == nameof(MinPosition))
+        {
+            var server = animation.CreateInstance(this.Server, finalValue);
+            PendingAnimations[ServerInteractionTracker.s_IdOfMinPositionProperty] = server;
+            _changedFieldsOfInteractionTracker |= InteractionTrackerChangedFields.MinPositionAnimated;
+            RegisterForSerialization();
+            return;
+        }
+
+        if(propertyName == nameof(MaxPosition))
+        {
+            var server = animation.CreateInstance(this.Server, finalValue);
+            PendingAnimations[ServerInteractionTracker.s_IdOfMaxPositionProperty] = server;
+            _changedFieldsOfInteractionTracker |= InteractionTrackerChangedFields.MaxPositionAnimated;
+            RegisterForSerialization();
+            return;
+        }
+        base.StartAnimation(propertyName, animation, finalValue);
+    }
+
+    public override void SerializeChangesCore(BatchStreamWriter writer)
+    {
+        base.SerializeChangesCore(writer);
+        writer.Write(_changedFieldsOfInteractionTracker);
+        if ((_changedFieldsOfInteractionTracker & InteractionTrackerChangedFields.MinPositionAnimated) == InteractionTrackerChangedFields.MinPositionAnimated)
+            writer.WriteObject(PendingAnimations.GetAndRemove(ServerInteractionTracker.s_IdOfMinPositionProperty));
+        if ((_changedFieldsOfInteractionTracker & InteractionTrackerChangedFields.MaxPositionAnimated) == InteractionTrackerChangedFields.MaxPositionAnimated)
+            writer.WriteObject(PendingAnimations.GetAndRemove(ServerInteractionTracker.s_IdOfMaxPositionProperty));
     }
 }
 
