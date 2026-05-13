@@ -12,6 +12,7 @@ namespace SmoothScroll.Avalonia.Interaction.Inertia2;
 
 internal sealed class Inertia2State : InteractionTrackerState, IServerClockItem
 {
+    private const double DecayRate = 0.95;
     internal override string Name => "InertiaState";
 
     private List<ServerInteractionTrackerInertiaModifier> _positionXInertiaModifiers;
@@ -20,10 +21,14 @@ internal sealed class Inertia2State : InteractionTrackerState, IServerClockItem
 
     private readonly ServerCompositor _compositor;
     private readonly Vector3D _targetPosition;
+    private readonly double? _targetScale;
+    private readonly Vector3D? _scaleCenterPoint;
     private readonly Stopwatch _stopwatch = new ();
 
     public Inertia2State(ServerInteractionTracker tracker,
         Vector3D targetPosition,
+        double? targetScale,
+        Vector3D? scaleCenterPoint,
         List<ServerInteractionTrackerInertiaModifier> positionXInertiaModifiers,
         List<ServerInteractionTrackerInertiaModifier> positionYInertiaModifiers,
         List<ServerInteractionTrackerInertiaModifier> scaleInertiaModifiers) : base(tracker)
@@ -34,6 +39,8 @@ internal sealed class Inertia2State : InteractionTrackerState, IServerClockItem
         _positionYInertiaModifiers = positionYInertiaModifiers;
         _scaleInertiaModifiers = scaleInertiaModifiers;
         _targetPosition = targetPosition;
+        _targetScale = targetScale;
+        _scaleCenterPoint = scaleCenterPoint;
     }
 
     protected override void EnterState()
@@ -83,29 +90,44 @@ internal sealed class Inertia2State : InteractionTrackerState, IServerClockItem
 
     internal override void TryUpdatePositionWithAdditionalVelocity(Vector3D velocityInPixelsPerSecond, int requestId)
     {
-        throw new NotImplementedException();
+        
     }
 
     private void Stop()
     {
         _stopwatch.Stop();
         _compositor.Animations.RemoveFromClock(this);
+        _interactionTracker.ChangeState(new IdleState(_interactionTracker, 0));
     }
 
 
     public void OnTick()
     {
         var currentPosition = _interactionTracker.Position;
+        var currentScale = _interactionTracker.Scale;
 
-        var x = CalculateAxis(currentPosition.X, _targetPosition.X, _positionXInertiaModifiers);
-        var y = CalculateAxis(currentPosition.Y, _targetPosition.Y ,_positionYInertiaModifiers);
-        if (MathUtilities.AreClose(x, currentPosition.X) && MathUtilities.AreClose(y, currentPosition.Y))
+        if(_targetScale is not null)
         {
-            Stop();
-        }
-        var newPosition = new Vector3D(x, y, currentPosition.Z);
 
-        _interactionTracker.SetPosition(newPosition, 0);
+            var newScale = Evaluate(currentScale, _targetScale!.Value, _stopwatch.ElapsedMilliseconds / 1000.0, DecayRate);
+            _interactionTracker.SetScale(newScale, _scaleCenterPoint!.Value, 0);
+            if (MathUtilities.AreClose(currentScale, newScale))
+            {
+                Stop();
+            }
+        }
+        else
+        {
+            var x = CalculateAxis(currentPosition.X, _targetPosition.X, _positionXInertiaModifiers);
+            var y = CalculateAxis(currentPosition.Y, _targetPosition.Y, _positionYInertiaModifiers);
+            var newPosition = new Vector3D(x, y, currentPosition.Z);
+            _interactionTracker.SetPosition(newPosition, 0);
+            if (MathUtilities.AreClose(x, currentPosition.X) && MathUtilities.AreClose(y, currentPosition.Y))
+            {
+                Stop();
+            }
+        }
+
     }
 
     private double CalculateAxis(double currentValue, double targetValue, IEnumerable<ServerInteractionTrackerInertiaModifier> modifiers)
@@ -128,11 +150,15 @@ internal sealed class Inertia2State : InteractionTrackerState, IServerClockItem
         if (!isModifierSelected)
         {
             var elapsedSeconds = _stopwatch!.ElapsedMilliseconds / 1000.0;
-            const double decayRate = 0.95;
-            updatedValue = Lerp(currentValue, targetValue, (1.0f - decayRate) * elapsedSeconds * 10f);
+            updatedValue = Evaluate(currentValue, targetValue, elapsedSeconds, DecayRate);
         }
         
         return updatedValue;
+    }
+
+    private double Evaluate(double currentValue, double targetValue, double elapsedSeconds, double decayRate)
+    {
+        return Lerp(currentValue, targetValue, (1.0f - decayRate) * elapsedSeconds * 10f);
     }
 
     private static double Lerp(double start, double end, double t)
