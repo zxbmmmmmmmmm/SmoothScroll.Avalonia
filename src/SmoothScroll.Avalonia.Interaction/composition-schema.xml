@@ -1,0 +1,12 @@
+﻿<Object Name="InteractionTracker" Internal="true" CustomCtor="true" CustomServerCtor="true">
+  <Property Name="MinScale" Type="double" Animated="true"/>
+  <Property Name="MaxScale" Type="double" Animated="true"/>
+  <Property Name="MinPosition" Type="Vector3D" Animated="true"/>
+  <Property Name="MaxPosition" Type="Vector3D" Animated="true"/>
+  <Property Name="PositionInertiaDecayRate" Type="Vector3D" Animated="true" DefaultValue="new Avalonia.Vector3D(0.95, 0.95, 0.95)"/>
+  <Property Name="ScaleInertiaDecayRate" Type="double" Animated="true"/>
+  <Property Name="Scale" Type="double" Animated="true"/>
+  <Property Name="Position" Type="Vector3D" Animated="true"/>
+</Object>
+
+

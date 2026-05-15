@@ -36,81 +36,6 @@ public partial class InteractionTracker : CompositionObject
 
     public IInteractionTrackerOwner? Owner { get; init; }
 
-    public double MinScale
-    {
-        get;
-        set
-        {
-            if (MathUtilities.AreClose(field, value))
-                return;
-
-            field = value;
-            Compositor.Loop.Wakeup();
-            RunOnServerThread(serverTracker => serverTracker.MinScale = value);
-        }
-    } = 1.0;
-
-    public double MaxScale
-    {
-        get;
-        set
-        {
-            if (MathUtilities.AreClose(field, value))
-                return;
-
-            field = value;
-            Compositor.Loop.Wakeup();
-            RunOnServerThread(serverTracker => serverTracker.MaxScale = value);
-        }
-    } = 1.0;
-
-
-    public Vector3D MinPosition
-    {
-        get;
-        set
-        {
-            if (field == value)
-                return;
-
-            field = value;
-            Compositor.Loop.Wakeup();
-            RunOnServerThread(serverTracker => serverTracker.UpdateMinPosition(value));
-        }
-    }
-
-    public Vector3D MaxPosition
-    {
-        get;
-        set
-        {
-            if (field == value)
-                return;
-
-            field = value;
-            Compositor.Loop.Wakeup();
-            RunOnServerThread(serverTracker => serverTracker.UpdateMaxPosition(value));
-        }
-    }
-
-    public Vector3D? PositionInertiaDecayRate
-    {
-        get;
-        set
-        {
-            if (field == value)
-                return;
-
-            field = value;
-            Compositor.Loop.Wakeup();
-            RunOnServerThread(serverTracker => serverTracker.PositionInertiaDecayRate = value);
-        }
-    }
-
-    public Vector3D Position { get; private set; }
-
-    public double Scale { get; private set; }
-
     public int TryUpdatePosition(Vector3D value)
     => TryUpdatePosition(value, InteractionTrackerClampingOption.Auto);
 
@@ -264,42 +189,6 @@ public partial class InteractionTracker : CompositionObject
     }
 
 
-}
-
-public partial class InteractionTracker 
-{
-    private InteractionTrackerChangedFields _changedFieldsOfInteractionTracker;
-    public override void StartAnimation(string propertyName, CompositionAnimation animation, ExpressionVariant? finalValue)
-    {
-        if(propertyName == nameof(MinPosition))
-        {
-            var server = animation.CreateInstance(this.Server, finalValue);
-            PendingAnimations[ServerInteractionTracker.s_IdOfMinPositionProperty] = server;
-            _changedFieldsOfInteractionTracker |= InteractionTrackerChangedFields.MinPositionAnimated;
-            RegisterForSerialization();
-            return;
-        }
-
-        if(propertyName == nameof(MaxPosition))
-        {
-            var server = animation.CreateInstance(this.Server, finalValue);
-            PendingAnimations[ServerInteractionTracker.s_IdOfMaxPositionProperty] = server;
-            _changedFieldsOfInteractionTracker |= InteractionTrackerChangedFields.MaxPositionAnimated;
-            RegisterForSerialization();
-            return;
-        }
-        base.StartAnimation(propertyName, animation, finalValue);
-    }
-
-    public override void SerializeChangesCore(BatchStreamWriter writer)
-    {
-        base.SerializeChangesCore(writer);
-        writer.Write(_changedFieldsOfInteractionTracker);
-        if ((_changedFieldsOfInteractionTracker & InteractionTrackerChangedFields.MinPositionAnimated) == InteractionTrackerChangedFields.MinPositionAnimated)
-            writer.WriteObject(PendingAnimations.GetAndRemove(ServerInteractionTracker.s_IdOfMinPositionProperty));
-        if ((_changedFieldsOfInteractionTracker & InteractionTrackerChangedFields.MaxPositionAnimated) == InteractionTrackerChangedFields.MaxPositionAnimated)
-            writer.WriteObject(PendingAnimations.GetAndRemove(ServerInteractionTracker.s_IdOfMaxPositionProperty));
-    }
 }
 
 public static class CompositorExtensions

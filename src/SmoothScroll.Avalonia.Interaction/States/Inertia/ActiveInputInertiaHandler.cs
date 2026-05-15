@@ -136,7 +136,7 @@ internal sealed partial class ActiveInputInertiaHandler : ServerObject, IServerC
             Axis = axis;
             Handler = handler;
             InitialVelocity = GetValue(velocities);
-            DecayRate = 1.0 - GetValue(Handler._interactionTracker.PositionInertiaDecayRate ?? new(0.95, 0.95, 0.95));
+            DecayRate = 1.0 - GetValue(Handler._interactionTracker.PositionInertiaDecayRate);
             InitialValue = GetValue(Handler._interactionTracker.Position);
 
             TimeToMinimumVelocity = GetTimeToMinimumVelocity();
