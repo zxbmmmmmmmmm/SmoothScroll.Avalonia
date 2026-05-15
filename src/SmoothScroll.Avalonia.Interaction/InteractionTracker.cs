@@ -98,7 +98,7 @@ public partial class InteractionTracker : CompositionObject
     internal void CompleteUserManipulation()
     {
         Compositor.Loop.Wakeup();
-        RunOnServerThread(static serverTracker => serverTracker.CompleteUserManipulation());
+        RunOnServerThread(serverTracker => serverTracker.CompleteUserManipulation());
     }
 
     internal void ReceiveManipulationDelta(Point translationDelta)
@@ -188,7 +188,7 @@ public partial class InteractionTracker : CompositionObject
         Compositor.PostServerJob(() => action(Server), false);
     }
 
-
+      
 }
 
 public static class CompositorExtensions
