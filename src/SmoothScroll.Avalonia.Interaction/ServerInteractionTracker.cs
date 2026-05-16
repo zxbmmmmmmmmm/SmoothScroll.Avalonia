@@ -24,12 +24,6 @@ internal partial class ServerInteractionTracker
         _positionInertiaDecayRate = new Vector3D(0.95, 0.95, 0.95);
     }
 
-    internal void InitializeValues(Vector3D position, double scale)
-    {
-        _position = position;
-        _scale = scale;
-    }
-
     public void AttachClient(InteractionTracker client)
     {
         _client = client;

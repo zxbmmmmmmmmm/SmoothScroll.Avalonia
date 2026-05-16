@@ -483,7 +483,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
             new Vector3D(scrollableArea.MinPosition.X, scrollableArea.MinPosition.Y, 0),
             new Vector3D(scrollableArea.MaxPosition.X, scrollableArea.MaxPosition.Y, 0));
 
-        _interactionTracker = compositionVisual!.Compositor.CreateInteractionTracker(this, initialPosition, ZoomFactor);
+        _interactionTracker = compositionVisual!.Compositor.CreateInteractionTracker(this);
         _interactionTracker.Position = initialPosition;
         _interactionTracker.Scale = ZoomFactor;
         _interactionTracker.MinScale = MinZoomFactor;
