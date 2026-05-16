@@ -122,27 +122,23 @@ public class InputElementInteractionSource : IDisposable
         }
         var deltaX = e.Delta.X * MouseWheelDeltaScale;
         var deltaY = e.Delta.Y * MouseWheelDeltaScale;
-        var delta = - new Vector(deltaX, deltaY);
         if (deltaY != 0)
         {
             if (PositionYSourceMode is InteractionSourceMode.Disabled)
             {
-                if (PositionXSourceMode is not InteractionSourceMode.Disabled)
-                {
-                    if (IsAtBoundaryForChaining(deltaY, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
-                        return;
+                if (PositionXSourceMode is InteractionSourceMode.Disabled) return;
+                if (IsAtBoundaryForChaining(deltaY, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
+                    return;
 
-                    _tracker.ApplyWheelDelta(delta);
-                    e.Handled = true;
-                }
+                _tracker.ApplyWheelDelta(new Vector(-deltaY,0));
+                e.Handled = true;
                 return;
             }
 
             if (IsAtBoundaryForChaining(deltaY, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode, _hasVerticalChainingTarget))
                 return;
 
-            _tracker.ApplyWheelDelta(delta);
-            e.Handled = true;
+            _tracker.ApplyWheelDelta(new Vector(0, -deltaY));
         }
         else
         {
@@ -154,9 +150,10 @@ public class InputElementInteractionSource : IDisposable
             if (IsAtBoundaryForChaining(deltaX, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                 return;
 
-            _tracker.ApplyWheelDelta(delta);
-            e.Handled = true;
+            _tracker.ApplyWheelDelta(new Vector(-deltaX, 0));
         }
+
+        e.Handled = true;
     }
 
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
