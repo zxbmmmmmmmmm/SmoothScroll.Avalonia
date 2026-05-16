@@ -70,8 +70,8 @@ internal partial class ServerInteractionTracker
     public void AddScaleVelocity(Point origin, double delta)
         => State.AddScaleVelocity(origin, delta);
 
-    public void ApplyWheelDelta(double delta, bool isHorizontal)
-        => State.ApplyWheelDelta(delta, isHorizontal);
+    public void ApplyWheelDelta(Vector delta)
+        => State.ApplyWheelDelta(delta);
 
     public void StartAnimation(CompositionAnimation animation, Vector3D? scaleCenterPoint = null)
         => State.StartAnimation(animation, scaleCenterPoint);

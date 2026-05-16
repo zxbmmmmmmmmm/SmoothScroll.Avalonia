@@ -69,7 +69,7 @@ internal sealed class CustomAnimationState : InteractionTrackerState
     {
     }
 
-    internal override void ApplyWheelDelta(double delta, bool isHorizontal)
+    internal override void ApplyWheelDelta(Vector delta)
     {
     }
 

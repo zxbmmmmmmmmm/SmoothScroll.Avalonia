@@ -13,6 +13,8 @@ public partial class InteractionTracker : CompositionObject
 {
     private int _requestId = 0;
 
+    //private readonly List<InteractionTrackerRequest> _pendingRequest = [];
+
     internal new ServerInteractionTracker Server { get; }
 
     internal InteractionTracker(Compositor compositor, ServerInteractionTracker server)
@@ -56,8 +58,6 @@ public partial class InteractionTracker : CompositionObject
     public void TryUpdateScale(double scale, Vector3D centerPoint)
     {
         var currentScale = Scale;
-        if (MathUtilities.AreClose(currentScale, scale))
-            return;
 
         var id = Interlocked.Increment(ref _requestId);
         Compositor.Loop.Wakeup();
@@ -119,10 +119,10 @@ public partial class InteractionTracker : CompositionObject
         RunOnServerThread(serverTracker => serverTracker.AddScaleVelocity(origin, delta));
     }
 
-    internal void ApplyWheelDelta(double delta, bool isHorizontal)
+    internal void ApplyWheelDelta(Vector delta)
     {
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.ApplyWheelDelta(-delta, isHorizontal));
+        RunOnServerThread(serverTracker => serverTracker.ApplyWheelDelta(delta));
     }
 
     internal void RaiseValuesChanged(Vector3D position, double scale, int requestId)
@@ -188,7 +188,15 @@ public partial class InteractionTracker : CompositionObject
         Compositor.PostServerJob(() => action(Server), false);
     }
 
-      
+    private void QueueRequest()
+    {
+        
+    }
+}
+
+internal struct InteractionTrackerRequest
+{
+    public int RequestId { get; private set; }
 }
 
 public static class CompositorExtensions

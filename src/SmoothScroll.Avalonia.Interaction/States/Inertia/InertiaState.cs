@@ -97,9 +97,9 @@ internal abstract class InertiaState : InteractionTrackerState
     {
     }
 
-    internal override void ApplyWheelDelta(double delta, bool isHorizontal)
+    internal override void ApplyWheelDelta(Vector delta)
     {
-        var newDelta = isHorizontal ? new Vector3D(delta, 0, 0) : new Vector3D(0, delta, 0);
+        var newDelta = new Vector3D(delta.X, delta.Y, 0);
         var totalDelta = (Handler.FinalModifiedPosition - _interactionTracker.Position) + newDelta;
         var targetVelocity = Vector3D.Divide(totalDelta, 0.25);
 

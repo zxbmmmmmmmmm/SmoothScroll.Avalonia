@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using System.Numerics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -7,6 +8,7 @@ using Avalonia.Platform;
 using Avalonia.Utilities;
 using Avalonia.VisualTree;
 using SmoothScroll.Avalonia.Interaction.Helpers;
+using Vector = Avalonia.Vector;
 
 namespace SmoothScroll.Avalonia.Interaction;
 
@@ -120,6 +122,7 @@ public class InputElementInteractionSource : IDisposable
         }
         var deltaX = e.Delta.X * MouseWheelDeltaScale;
         var deltaY = e.Delta.Y * MouseWheelDeltaScale;
+        var delta = - new Vector(deltaX, deltaY);
         if (deltaY != 0)
         {
             if (PositionYSourceMode is InteractionSourceMode.Disabled)
@@ -129,7 +132,7 @@ public class InputElementInteractionSource : IDisposable
                     if (IsAtBoundaryForChaining(deltaY, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                         return;
 
-                    _tracker.ApplyWheelDelta(deltaY, true);
+                    _tracker.ApplyWheelDelta(delta);
                     e.Handled = true;
                 }
                 return;
@@ -138,7 +141,7 @@ public class InputElementInteractionSource : IDisposable
             if (IsAtBoundaryForChaining(deltaY, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode, _hasVerticalChainingTarget))
                 return;
 
-            _tracker.ApplyWheelDelta(deltaY, false);
+            _tracker.ApplyWheelDelta(delta);
             e.Handled = true;
         }
         else
@@ -151,7 +154,7 @@ public class InputElementInteractionSource : IDisposable
             if (IsAtBoundaryForChaining(deltaX, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                 return;
 
-            _tracker.ApplyWheelDelta(deltaX, true);
+            _tracker.ApplyWheelDelta(delta);
             e.Handled = true;
         }
     }

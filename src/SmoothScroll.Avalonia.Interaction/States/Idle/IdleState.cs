@@ -56,11 +56,11 @@ internal sealed class IdleState : InteractionTrackerState
     {
     }
 
-    internal override void ApplyWheelDelta(double delta, bool isHorizontal)
+    internal override void ApplyWheelDelta(Vector delta)
     {
         // Constant velocity for 250ms
         var velocityValue = delta / 0.25f;
-        var velocity = isHorizontal ? new Vector3D(velocityValue, 0, 0) : new Vector3D(0, velocityValue, 0);
+        var velocity = new Vector3D(velocityValue.X, velocityValue.Y, 0);
         _interactionTracker.ChangeState(new PointerWheelInertiaState(_interactionTracker, velocity, requestId: 0));
     }
 
