@@ -61,10 +61,10 @@ internal partial class ServerInteractionTracker
     public void CompleteUserManipulation()
         => State.CompleteUserManipulation();
 
-    public void ApplyManipulationDelta(Point translationDelta)
+    public void ApplyManipulationDelta(Vector translationDelta)
         => State.ApplyManipulationDelta(translationDelta);
 
-    public void StartInertia(Point linearVelocity)
+    public void StartInertia(Vector linearVelocity)
         => State.StartInertia(linearVelocity);
 
     public void AddScaleVelocity(Point origin, double delta)

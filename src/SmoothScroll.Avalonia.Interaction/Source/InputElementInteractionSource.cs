@@ -311,7 +311,7 @@ public class InputElementInteractionSource : IDisposable
                     return;
                 }
 
-                _tracker.ApplyManipulationDelta(delta);
+                _tracker.ApplyManipulationDelta(-delta);
                 _velocityTracker?.AddPosition(TimeSpan.FromMilliseconds(e.Timestamp), position - _pressedPosition);
                 _firstPosition = position;
             }
@@ -437,7 +437,7 @@ public class InputElementInteractionSource : IDisposable
         }
 
         _tracker.BeginUserManipulation(e.GetPosition(_inputElement), e.Pointer);
-        _tracker.ApplyManipulationDelta(translationDelta);
+        _tracker.ApplyManipulationDelta(-translationDelta);
         _tracker.CompleteUserManipulation();
         e.Handled = true;
     }

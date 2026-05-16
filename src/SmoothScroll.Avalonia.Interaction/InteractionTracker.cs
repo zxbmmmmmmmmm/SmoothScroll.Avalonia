@@ -13,7 +13,7 @@ public partial class InteractionTracker : CompositionObject
 {
     private int _requestId = 0;
 
-    //private readonly List<InteractionTrackerRequest> _pendingRequest = [];
+    //private readonly List<InteractionTrackerRequest> _pendingRequests = [];
 
     internal new ServerInteractionTracker Server { get; }
 
@@ -101,10 +101,10 @@ public partial class InteractionTracker : CompositionObject
         RunOnServerThread(serverTracker => serverTracker.CompleteUserManipulation());
     }
 
-    internal void ApplyManipulationDelta(Point translationDelta)
+    internal void ApplyManipulationDelta(Vector translationDelta)
     {
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.ApplyManipulationDelta(-translationDelta));
+        RunOnServerThread(serverTracker => serverTracker.ApplyManipulationDelta(translationDelta));
     }
 
     internal void StartInertia(Point linearVelocity)
@@ -192,9 +192,16 @@ public partial class InteractionTracker : CompositionObject
     {
         
     }
+
+    partial void SerializeRequests(BatchStreamWriter writer)
+    {
+        //writer.Write(_pendingRequests.Count);
+        
+    }
+    
 }
 
-internal struct InteractionTrackerRequest
+internal class InteractionTrackerRequest
 {
     public int RequestId { get; private set; }
 }

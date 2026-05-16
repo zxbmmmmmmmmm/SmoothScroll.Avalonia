@@ -89,11 +89,11 @@ internal abstract class InertiaState : InteractionTrackerState
             0));
     }
 
-    internal override void ApplyManipulationDelta(Point translationDelta)
+    internal override void ApplyManipulationDelta(Vector translationDelta)
     {
     }
 
-    internal override void StartInertia(Point linearVelocity)
+    internal override void StartInertia(Vector linearVelocity)
     {
     }
 

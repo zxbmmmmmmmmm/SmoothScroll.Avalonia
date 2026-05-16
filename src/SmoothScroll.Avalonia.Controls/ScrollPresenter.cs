@@ -1211,7 +1211,6 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         var scale = args.Scale;
         var compositionVisual = GetCompositionVisual();
 
-
         void ApplyValues()
         {
             if (_interactionTracker != sender)

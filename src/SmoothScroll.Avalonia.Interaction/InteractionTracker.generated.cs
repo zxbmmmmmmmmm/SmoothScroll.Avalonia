@@ -419,6 +419,7 @@ public partial class InteractionTracker
     }
 
     partial void InitializeDefaultsExtra();
+    partial void SerializeRequests(BatchStreamWriter writer);
     public override void SerializeChangesCore(BatchStreamWriter writer)
     {
         base.SerializeChangesCore(writer);
@@ -458,6 +459,7 @@ public partial class InteractionTracker
         {
             _changedFieldsOfInteractionTracker = default;
         }
+        SerializeRequests(writer);
     }
 
     public override void StartAnimation(string propertyName, CompositionAnimation animation, ExpressionVariant? finalValue)

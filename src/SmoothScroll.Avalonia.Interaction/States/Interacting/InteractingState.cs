@@ -72,7 +72,7 @@ internal sealed class InteractingState : InteractionTrackerState
         _previousOrigin = origin;
     }
 
-    internal override void ApplyManipulationDelta(Point translationDelta)
+    internal override void ApplyManipulationDelta(Vector translationDelta)
     {
         _position += new Vector3D((float)translationDelta.X, (float)translationDelta.Y, 0);
         UpdateTrackerPosition(_position);
@@ -119,7 +119,7 @@ internal sealed class InteractingState : InteractionTrackerState
         _interactionTracker.SetPosition(modifiedPosition, requestId: 0);
     }
 
-    internal override void StartInertia(Point linearVelocity)
+    internal override void StartInertia(Vector linearVelocity)
     {
         _interactionTracker.ChangeState(new ActiveInputInertiaState(
             _interactionTracker,
