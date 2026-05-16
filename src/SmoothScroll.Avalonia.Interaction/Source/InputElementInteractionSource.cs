@@ -114,7 +114,7 @@ public class InputElementInteractionSource : IDisposable
         {
             var origin = e.GetPosition(_inputElement);
             var scaleDelta = Math.Pow(1.2, e.Delta.Y);
-            _tracker.ReceiveScaleDelta(origin, scaleDelta);
+            _tracker.AddScaleVelocity(origin, scaleDelta);
             e.Handled = true;
             return;
         }
@@ -129,7 +129,7 @@ public class InputElementInteractionSource : IDisposable
                     if (IsAtBoundaryForChaining(deltaY, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                         return;
 
-                    _tracker.ReceivePointerWheel(deltaY, true);
+                    _tracker.ApplyWheelDelta(deltaY, true);
                     e.Handled = true;
                 }
                 return;
@@ -138,7 +138,7 @@ public class InputElementInteractionSource : IDisposable
             if (IsAtBoundaryForChaining(deltaY, _tracker.Position.Y, _tracker.MinPosition.Y, _tracker.MaxPosition.Y, PositionYChainingMode, _hasVerticalChainingTarget))
                 return;
 
-            _tracker.ReceivePointerWheel(deltaY, false);
+            _tracker.ApplyWheelDelta(deltaY, false);
             e.Handled = true;
         }
         else
@@ -151,7 +151,7 @@ public class InputElementInteractionSource : IDisposable
             if (IsAtBoundaryForChaining(deltaX, _tracker.Position.X, _tracker.MinPosition.X, _tracker.MaxPosition.X, PositionXChainingMode, _hasHorizontalChainingTarget))
                 return;
 
-            _tracker.ReceivePointerWheel(deltaX, true);
+            _tracker.ApplyWheelDelta(deltaX, true);
             e.Handled = true;
         }
     }
@@ -265,7 +265,7 @@ public class InputElementInteractionSource : IDisposable
             if (_isInteracting && _previousDistance > 0)
             {
                 var scaleRatio = currentDistance / _previousDistance;
-                _tracker.ReceiveScaleDelta(currentCenter, scaleRatio);
+                _tracker.AddScaleVelocity(currentCenter, scaleRatio);
                 e.Handled = true;
             }
 
@@ -308,7 +308,7 @@ public class InputElementInteractionSource : IDisposable
                     return;
                 }
 
-                _tracker.ReceiveManipulationDelta(delta);
+                _tracker.ApplyManipulationDelta(delta);
                 _velocityTracker?.AddPosition(TimeSpan.FromMilliseconds(e.Timestamp), position - _pressedPosition);
                 _firstPosition = position;
             }
@@ -373,7 +373,7 @@ public class InputElementInteractionSource : IDisposable
 
         if (velocity != Vector.Zero)
         {
-            _tracker.ReceiveInertiaStarting(new Point(velocity.X, velocity.Y));
+            _tracker.StartInertia(new Point(velocity.X, velocity.Y));
         }
         else
         {
@@ -433,8 +433,8 @@ public class InputElementInteractionSource : IDisposable
             return;
         }
 
-        _tracker.StartUserManipulation(e.GetPosition(_inputElement), e.Pointer);
-        _tracker.ReceiveManipulationDelta(translationDelta);
+        _tracker.BeginUserManipulation(e.GetPosition(_inputElement), e.Pointer);
+        _tracker.ApplyManipulationDelta(translationDelta);
         _tracker.CompleteUserManipulation();
         e.Handled = true;
     }
@@ -503,7 +503,7 @@ public class InputElementInteractionSource : IDisposable
 
         var pointer = _firstContact ?? e.Pointer;
         _isInteracting = true;
-        _tracker.StartUserManipulation(position, pointer);
+        _tracker.BeginUserManipulation(position, pointer);
         CapturePointer(pointer);
         if (pointer != e.Pointer)
         {

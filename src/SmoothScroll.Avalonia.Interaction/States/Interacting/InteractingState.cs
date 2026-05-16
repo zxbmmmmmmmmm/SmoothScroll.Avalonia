@@ -25,7 +25,7 @@ internal sealed class InteractingState : InteractionTrackerState
         _interactionTracker.NotifyInteractingStateEntered(requestId: 0, isFromBinding: false);
     }
 
-    internal override void StartUserManipulation(Point position, IPointer pointer)
+    internal override void BeginUserManipulation(Point position, IPointer pointer)
     {
         // This probably shouldn't happen.
         // We ignore.
@@ -40,7 +40,7 @@ internal sealed class InteractingState : InteractionTrackerState
         _interactionTracker.ChangeState(new ActiveInputInertiaState(_interactionTracker, default, requestId: 0));
     }
 
-    internal override void ReceiveScaleDelta(Point origin, double scaleDelta)
+    internal override void AddScaleVelocity(Point origin, double scaleDelta)
     {
         if (scaleDelta <= 0 || double.IsNaN(scaleDelta) || double.IsInfinity(scaleDelta))
         {
@@ -72,7 +72,7 @@ internal sealed class InteractingState : InteractionTrackerState
         _previousOrigin = origin;
     }
 
-    internal override void ReceiveManipulationDelta(Point translationDelta)
+    internal override void ApplyManipulationDelta(Point translationDelta)
     {
         _position += new Vector3D((float)translationDelta.X, (float)translationDelta.Y, 0);
         UpdateTrackerPosition(_position);
@@ -119,7 +119,7 @@ internal sealed class InteractingState : InteractionTrackerState
         _interactionTracker.SetPosition(modifiedPosition, requestId: 0);
     }
 
-    internal override void ReceiveInertiaStarting(Point linearVelocity)
+    internal override void StartInertia(Point linearVelocity)
     {
         _interactionTracker.ChangeState(new ActiveInputInertiaState(
             _interactionTracker,
@@ -127,7 +127,7 @@ internal sealed class InteractingState : InteractionTrackerState
             requestId: 0));
     }
 
-    internal override void ReceivePointerWheel(double delta, bool isHorizontal)
+    internal override void ApplyWheelDelta(double delta, bool isHorizontal)
     {
     }
 

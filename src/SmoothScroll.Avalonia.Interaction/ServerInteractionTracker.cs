@@ -55,26 +55,26 @@ internal partial class ServerInteractionTracker
     public void TryUpdateScale(double scale, Vector3D centerPoint, int requestId)
         => SetScale(scale, centerPoint, requestId);
 
-    public void StartUserManipulation(Point position, IPointer pointer)
-        => State.StartUserManipulation(position, pointer);
+    public void BeginUserManipulation(Point position, IPointer pointer)
+        => State.BeginUserManipulation(position, pointer);
 
     public void CompleteUserManipulation()
         => State.CompleteUserManipulation();
 
-    public void ReceiveManipulationDelta(Point translationDelta)
-        => State.ReceiveManipulationDelta(translationDelta);
+    public void ApplyManipulationDelta(Point translationDelta)
+        => State.ApplyManipulationDelta(translationDelta);
 
-    public void ReceiveInertiaStarting(Point linearVelocity)
-        => State.ReceiveInertiaStarting(linearVelocity);
+    public void StartInertia(Point linearVelocity)
+        => State.StartInertia(linearVelocity);
 
-    public void ReceiveScaleDelta(Point origin, double delta)
-        => State.ReceiveScaleDelta(origin, delta);
+    public void AddScaleVelocity(Point origin, double delta)
+        => State.AddScaleVelocity(origin, delta);
 
-    public void ReceivePointerWheel(double delta, bool isHorizontal)
-        => State.ReceivePointerWheel(delta, isHorizontal);
+    public void ApplyWheelDelta(double delta, bool isHorizontal)
+        => State.ApplyWheelDelta(delta, isHorizontal);
 
-    public void ReceiveAnimationStarting(CompositionAnimation animation, Vector3D? scaleCenterPoint = null)
-        => State.ReceiveAnimationStarting(animation, scaleCenterPoint);
+    public void StartAnimation(CompositionAnimation animation, Vector3D? scaleCenterPoint = null)
+        => State.StartAnimation(animation, scaleCenterPoint);
 
     internal void SetPosition(Vector3D newPosition, int requestId)
     {

@@ -23,7 +23,7 @@ internal sealed class IdleState : InteractionTrackerState
         _interactionTracker.NotifyIdleStateEntered(_requestId, isFromBinding: false, _isInitialIdleState);
     }
 
-    internal override void StartUserManipulation(Point position, IPointer pointer)
+    internal override void BeginUserManipulation(Point position, IPointer pointer)
     {
         _interactionTracker.ChangeState(new InteractingState(_interactionTracker));
     }
@@ -32,7 +32,7 @@ internal sealed class IdleState : InteractionTrackerState
     {
     }
 
-    internal override void ReceiveScaleDelta(Point origin, double delta)
+    internal override void AddScaleVelocity(Point origin, double delta)
     {
         if (delta <= 0 || double.IsNaN(delta) || double.IsInfinity(delta))
         {
@@ -48,15 +48,15 @@ internal sealed class IdleState : InteractionTrackerState
             scaleOrigin: origin));
     }
 
-    internal override void ReceiveManipulationDelta(Point translationDelta)
+    internal override void ApplyManipulationDelta(Point translationDelta)
     {
     }
 
-    internal override void ReceiveInertiaStarting(Point linearVelocity)
+    internal override void StartInertia(Point linearVelocity)
     {
     }
 
-    internal override void ReceivePointerWheel(double delta, bool isHorizontal)
+    internal override void ApplyWheelDelta(double delta, bool isHorizontal)
     {
         // Constant velocity for 250ms
         var velocityValue = delta / 0.25f;
@@ -88,7 +88,7 @@ internal sealed class IdleState : InteractionTrackerState
         _interactionTracker.SetPosition(clampedPosition, 0);
     }
 
-    internal override void ReceiveAnimationStarting(CompositionAnimation animation, Vector3D? centerPoint = null)
+    internal override void StartAnimation(CompositionAnimation animation, Vector3D? centerPoint = null)
     {
         _interactionTracker.ChangeState(new CustomAnimationState(_interactionTracker, animation, centerPoint));
     }

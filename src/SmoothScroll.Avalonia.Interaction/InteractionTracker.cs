@@ -73,7 +73,7 @@ public partial class InteractionTracker : CompositionObject
 
         animation.Target = nameof(Server.Position);
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.ReceiveAnimationStarting(animation));
+        RunOnServerThread(serverTracker => serverTracker.StartAnimation(animation));
     }
 
     public void TryUpdateScaleWithAnimation(CompositionAnimation animation, Vector3D centerPoint)
@@ -85,14 +85,14 @@ public partial class InteractionTracker : CompositionObject
 
         animation.Target = nameof(Server.Scale);
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.ReceiveAnimationStarting(animation, centerPoint));
+        RunOnServerThread(serverTracker => serverTracker.StartAnimation(animation, centerPoint));
     }
 
 
-    internal void StartUserManipulation(Point position, IPointer pointer)
+    internal void BeginUserManipulation(Point position, IPointer pointer)
     {
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.StartUserManipulation(position, pointer));
+        RunOnServerThread(serverTracker => serverTracker.BeginUserManipulation(position, pointer));
     }
 
     internal void CompleteUserManipulation()
@@ -101,28 +101,28 @@ public partial class InteractionTracker : CompositionObject
         RunOnServerThread(serverTracker => serverTracker.CompleteUserManipulation());
     }
 
-    internal void ReceiveManipulationDelta(Point translationDelta)
+    internal void ApplyManipulationDelta(Point translationDelta)
     {
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.ReceiveManipulationDelta(-translationDelta));
+        RunOnServerThread(serverTracker => serverTracker.ApplyManipulationDelta(-translationDelta));
     }
 
-    internal void ReceiveInertiaStarting(Point linearVelocity)
+    internal void StartInertia(Point linearVelocity)
     {
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.ReceiveInertiaStarting(-linearVelocity));
+        RunOnServerThread(serverTracker => serverTracker.StartInertia(-linearVelocity));
     }
 
-    internal void ReceiveScaleDelta(Point origin, double delta)
+    internal void AddScaleVelocity(Point origin, double delta)
     {
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.ReceiveScaleDelta(origin, delta));
+        RunOnServerThread(serverTracker => serverTracker.AddScaleVelocity(origin, delta));
     }
 
-    internal void ReceivePointerWheel(double delta, bool isHorizontal)
+    internal void ApplyWheelDelta(double delta, bool isHorizontal)
     {
         Compositor.Loop.Wakeup();
-        RunOnServerThread(serverTracker => serverTracker.ReceivePointerWheel(-delta, isHorizontal));
+        RunOnServerThread(serverTracker => serverTracker.ApplyWheelDelta(-delta, isHorizontal));
     }
 
     internal void RaiseValuesChanged(Vector3D position, double scale, int requestId)
