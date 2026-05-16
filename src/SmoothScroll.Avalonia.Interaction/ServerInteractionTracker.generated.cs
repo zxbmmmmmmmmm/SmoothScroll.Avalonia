@@ -89,8 +89,9 @@ partial class ServerInteractionTracker : ServerObject
         else if ((changed & InteractionTrackerChangedFields.Position) == InteractionTrackerChangedFields.Position)
             Position = reader.Read<Vector3D>();
         OnFieldsDeserialized(changed);
+        DeserializeRequests(reader);
     }
-
+    partial void DeserializeRequests(BatchStreamReader reader);
     partial void OnFieldsDeserialized(InteractionTrackerChangedFields changed);
     public override CompositionProperty? GetCompositionProperty(string name)
     {

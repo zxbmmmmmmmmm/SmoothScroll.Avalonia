@@ -49,33 +49,6 @@ internal partial class ServerInteractionTracker
         State.ReceiveBoundsUpdate();
     }
 
-    public void TryUpdatePosition(Vector3D value, InteractionTrackerClampingOption option, int requestId)
-        => State.TryUpdatePosition(value, option, requestId);
-
-    public void TryUpdateScale(double scale, Vector3D centerPoint, int requestId)
-        => SetScale(scale, centerPoint, requestId);
-
-    public void BeginUserManipulation(Point position, IPointer pointer)
-        => State.BeginUserManipulation(position, pointer);
-
-    public void CompleteUserManipulation()
-        => State.CompleteUserManipulation();
-
-    public void ApplyManipulationDelta(Vector translationDelta)
-        => State.ApplyManipulationDelta(translationDelta);
-
-    public void StartInertia(Vector linearVelocity)
-        => State.StartInertia(linearVelocity);
-
-    public void AddScaleVelocity(Point origin, double delta)
-        => State.AddScaleVelocity(origin, delta);
-
-    public void ApplyWheelDelta(Vector delta)
-        => State.ApplyWheelDelta(delta);
-
-    public void StartAnimation(CompositionAnimation animation, Vector3D? scaleCenterPoint = null)
-        => State.StartAnimation(animation, scaleCenterPoint);
-
     internal void SetPosition(Vector3D newPosition, int requestId)
     {
         if (Position == newPosition)
@@ -151,14 +124,6 @@ internal partial class ServerInteractionTracker
 
     internal void NotifyRequestIgnored(int requestId)
         => PostToClient(client => client.RaiseRequestIgnored(requestId));
-
-    public void StartPositionAnimation(CompositionAnimation animation)
-    {
-        var instance = animation.CreateInstance(this, null);
-        GetOrCreateAnimations().OnSetAnimatedValue(s_IdOfPositionProperty,
-            ref _position, Compositor.Clock.Elapsed, instance);
-    }
-
     private InteractionTrackerState State => _state ??= new IdleState(this, requestId: 0, isInitialIdleState: true);
 
     private void NotifyValuesChanged(Vector3D position, double scale, int requestId)
@@ -177,6 +142,45 @@ internal partial class ServerInteractionTracker
     private static void WriteStateTransition(int count, string previousState, string newState)
     {
         Debug.WriteLine($"{count}:{previousState} -> {newState}");
+    }
+
+    partial void DeserializeRequests(BatchStreamReader reader)
+    {
+        var requestCount = reader.Read<int>();
+        for (var i = 0; i < requestCount; i++)
+        {
+            var request = reader.ReadObject();
+            switch (request)
+            {
+                case TryUpdatePositionRequest tryUpdatePositionRequest:
+                    State.TryUpdatePosition(tryUpdatePositionRequest.Position, tryUpdatePositionRequest.ClampingOption, tryUpdatePositionRequest.RequestId);
+                    break;
+                case TryUpdateScaleRequest tryUpdateScaleRequest:
+                    SetScale(tryUpdateScaleRequest.Scale, tryUpdateScaleRequest.CenterPoint, tryUpdateScaleRequest.RequestId);
+                    break;
+                case BeginUserManipulationRequest beginUserManipulationRequest:
+                    State.BeginUserManipulation(beginUserManipulationRequest.Position, beginUserManipulationRequest.Pointer);
+                    break;
+                case CompleteManipulationRequest completeManipulationRequest:
+                    State.CompleteUserManipulation();
+                    break;
+                case ApplyManipulationDeltaRequest applyManipulationDeltaRequest:
+                    State.ApplyManipulationDelta(applyManipulationDeltaRequest.TranslationDelta);
+                    break;
+                case StartInertiaRequest startInertiaRequest:
+                    State.StartInertia(startInertiaRequest.LinearVelocity);
+                    break;
+                case AddScaleVelocityRequest addScaleVelocityRequest:
+                    State.AddScaleVelocity(addScaleVelocityRequest.Origin, addScaleVelocityRequest.Delta);
+                    break;
+                case ApplyWheelDeltaRequest applyWheelDeltaRequest:
+                    State.ApplyWheelDelta(applyWheelDeltaRequest.Delta);
+                    break;
+                case StartAnimationRequest startAnimationRequest:
+                    State.StartAnimation(startAnimationRequest.Animation, startAnimationRequest.ScaleCenterPoint);
+                    break;
+            }
+        }
     }
 }
 
