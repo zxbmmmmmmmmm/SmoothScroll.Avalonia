@@ -14,13 +14,20 @@ public class InertiaAxisHelper
 
     public double CurrentValue { get; set; }
 
+    public double CurrentVelocity { get; set; }
+
 
     private readonly Stopwatch _stopwatch = new();
+    private double _lastElapsed;
 
     public double Tick()
     {
         var elapsed = _stopwatch.ElapsedMilliseconds;
-
+        var deltaTime = elapsed - _lastElapsed;
+        CurrentValue += CurrentVelocity * deltaTime / 1000;
+        CurrentVelocity *= Math.Pow(DecayRate, deltaTime / 10);
+        _lastElapsed = elapsed;
+        return CurrentValue;
     }
 
     public void Initialize(
