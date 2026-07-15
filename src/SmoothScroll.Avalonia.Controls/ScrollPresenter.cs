@@ -1295,7 +1295,7 @@ public sealed partial class ScrollPresenter : ContentPresenter, IScrollable, ISc
         Extent = scrollableArea.ScaledExtent;
 
         _interactionTracker.MinPosition = new Vector3D(scrollableArea.MinPosition.X, scrollableArea.MinPosition.Y, 0);
-        _interactionTracker.MaxPosition = new Vector3D(scrollableArea.MaxPosition.X, scrollableArea.MaxPosition.Y, 0);
+        _interactionTracker.MaxPosition = new Vector3D(Math.Max(scrollableArea.MinPosition.X, scrollableArea.MaxPosition.X), Math.Max(scrollableArea.MinPosition.Y,scrollableArea.MaxPosition.Y), 0);
 
         var range = scrollableArea.MaxPosition - scrollableArea.MinPosition;
 
