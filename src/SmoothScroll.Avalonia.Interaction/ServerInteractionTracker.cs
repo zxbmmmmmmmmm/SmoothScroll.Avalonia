@@ -31,18 +31,6 @@ internal partial class ServerInteractionTracker
         _state ??= new IdleState(this, requestId: 0, isInitialIdleState: true);
     }
 
-    public void UpdateMinPosition(Vector3D value)
-    {
-        MinPosition = value;
-        State.ReceiveBoundsUpdate();
-    }
-
-    public void UpdateMaxPosition(Vector3D value)
-    {
-        MaxPosition = value;
-        State.ReceiveBoundsUpdate();
-    }
-
     internal void SetPosition(Vector3D newPosition, int requestId)
     {
         if (Position == newPosition)
@@ -175,6 +163,17 @@ internal partial class ServerInteractionTracker
                     break;
             }
         }
+    }
+    partial void OnFieldsDeserialized(InteractionTrackerChangedFields changed)
+    {
+        const InteractionTrackerChangedFields positionBoundsChanged =
+            InteractionTrackerChangedFields.MinPosition |
+            InteractionTrackerChangedFields.MaxPosition;
+
+        if ((changed & positionBoundsChanged) is 0)
+            return;
+
+        State.ReceiveBoundsUpdate();
     }
 }
 
