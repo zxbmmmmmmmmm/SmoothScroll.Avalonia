@@ -9,8 +9,8 @@ on:
                 type: string
 
 permissions:
+    id-token: write
     contents: read
-
 env:
     CONTROLS_PROJECT_PATH: src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj
     INTERACTION_PROJECT_PATH: src/SmoothScroll.Avalonia.Interaction/SmoothScroll.Avalonia.Interaction.csproj
